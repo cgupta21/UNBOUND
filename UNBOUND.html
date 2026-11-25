@@ -428,7 +428,7 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
       if(this.busted)return;
       if(this.inside){this.time+=dt;if(this.alert){this.patrolTick(dt);if(this.busted)return}const p=this.inside,dx=Number(!!input.right)-Number(!!input.left),dz=Number(!!input.down)-Number(!!input.up),len=Math.hypot(dx,dz);if(len){const step=dt*(input.brake?5.2:3.2)/len;const mall=p.id==='mall';const free=(x,z)=>Math.abs(x)<(mall?13.6:6.6)&&z> -2.15&&z<4.75&&!(Math.abs(x)>4&&(!mall||Math.abs(x)<6.9)&&Math.abs(z)<2.7);if(free(p.x+dx*step,p.z))p.x+=dx*step;if(free(p.x,p.z+dz*step))p.z+=dz*step;p.walk+=step*len*4;p.h=Math.atan2(dx,-dz)}if(this.job?.remaining!=null&&(this.job.remaining-=dt)<=0){this.endJob();this.notify('Time expired')}return}
       this.time+=dt;this.clock=(this.clock+dt/100)%24;
-      const p=this.player,v=this.vehicle,forward=(+!!input.up)-(+!!input.down),turn=(+!!input.right)-(+!!input.left);
+      const p=this.player,v=this.vehicle,forward=(+!!input.up)-(+!!input.down),turn=clamp((+!!input.right)-(+!!input.left)+(v?(input.mouseSteer||0):0),-1,1);
       if(v?.heli){
         const clearance=(x,z)=>{let floor=x< -40?3:0;
           for(const b of buildings)if(Math.abs(b.x-x)<b.w/2+2&&Math.abs(b.z-z)<b.d/2+2)floor=Math.max(floor,b.h+5);
@@ -498,16 +498,30 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
       vec3 night=mix(vec3(.25,.24,.37),vec3(.035,.075,.17),smoothstep(0.,.48,h));vec3 col=mix(night,dusk,light);
       vec3 sun=normalize(vec3(-.37,.155,-.94));float sd=length(d-sun);col+=vec3(.32,.13,.02)*exp(-sd*6.)*light;
       col=mix(col,mix(vec3(.91,.89,.79),vec3(1.,.91,.61),light),1.-smoothstep(.052,.056,sd));
-      vec2 cp=d.xz/max(.055,d.y+.045)*vec2(2.,7.)+tm*.0004;float cloud=noise(cp)*.6+noise(cp*2.1)*.3+noise(cp*4.2)*.1;
+      col+=vec3(.22,.09,.035)*exp(-sd*sd*105.)*light;vec2 cp=d.xz/max(.055,d.y+.045)*vec2(2.,7.)+tm*.0004;float cloud=noise(cp)*.6+noise(cp*2.1)*.3+noise(cp*4.2)*.1;
       col=mix(col,mix(vec3(.25,.25,.40),vec3(.99,.75,.72),light),smoothstep(.58,.80,cloud)*smoothstep(.035,.14,h)*.48);gl_FragColor=vec4(col,1.);}`);
   const mesh=program(`attribute vec3 pos,col;attribute vec2 uv;attribute float mat;uniform vec3 eye,rightV,upV,forwardV,offset;uniform vec2 lens,rot;uniform float walk;
-    varying vec3 color,world;varying vec2 tex;varying float material,depth;
+    varying vec3 color,world,viewRay;varying vec2 tex;varying float material,depth;
     void main(){vec3 p=pos;if(walk!=0.&&p.y<.83)p.z+=sin(walk)*sign(p.x)*(.83-p.y)*.48;
-    world=vec3(p.x*rot.x-p.z*rot.y,p.y,p.x*rot.y+p.z*rot.x)+offset;vec3 d=world-eye;depth=dot(d,forwardV);
+    world=vec3(p.x*rot.x-p.z*rot.y,p.y,p.x*rot.y+p.z*rot.x)+offset;vec3 d=world-eye;viewRay=-d;depth=dot(d,forwardV);
     gl_Position=vec4(dot(d,rightV)/lens.x,dot(d,upV)/lens.y,depth*1.0006-.2801,depth);color=col;tex=uv;material=mat;}`,`
-    precision mediump float;varying vec3 color,world;varying vec2 tex;varying float material,depth;uniform float light,tm;uniform sampler2D atlas;
+    precision mediump float;varying vec3 color,world,viewRay;varying vec2 tex;varying float material,depth;uniform float light,tm;uniform sampler2D atlas;
     void main(){vec3 c=color;if(material>.5&&material<1.5)c*=texture2D(atlas,tex).rgb;
-      if(material>2.5&&material<3.5){float w=sin(world.z*2.1+world.x*.85+tm*1.4)*.5+sin(world.z*1.1-world.x*.55+tm)*.5;c+=vec3(.08,.13,.13)*smoothstep(.54,.94,w);}
+      if(material>2.5&&material<3.5){
+        vec3 view=normalize(viewRay);
+        float a=world.z*1.45+world.x*.42+tm*1.1,b=world.z*.63-world.x*1.21+tm*.85;
+        vec3 n=normalize(vec3(.07*cos(a)-.09*cos(b),1.,.16*cos(a)+.06*cos(b)));
+        float grazing=pow(1.-clamp(dot(n,view),0.,1.),3.);
+        vec3 reflection=mix(vec3(.32,.41,.58),vec3(.93,.59,.52),light);
+        c=mix(c,reflection,.12+.52*grazing);
+        vec3 halfVector=normalize(view+normalize(vec3(-.37,.155,-.94)));
+        c+=light*vec3(1.,.73,.43)*pow(max(dot(n,halfVector),0.),85.);
+      }
+      if(material>5.5&&material<6.5){
+        vec3 view=normalize(viewRay);
+        float skyline=smoothstep(-.15,.65,-view.y);
+        c=mix(c,mix(vec3(.93,.60,.53),vec3(.29,.52,.66),skyline),.28+.16*sin(world.y*.24));
+      }
       if(material>3.5&&material<4.5){float grit=fract(sin(dot(floor(world.xz*7.),vec2(12.989,7.233)))*127.41);c+=vec3(.018)*(grit-.5);}
       c*=mix(vec3(.27,.32,.51),vec3(1.),light);
       if(material>4.5&&material<5.5)c=mix(c,vec3(.99,.72,.40),.79*(1.-light));
@@ -558,8 +572,8 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     g.box(x+2,h+2.55,z-1,w*.43,.18,d*.4,'#e6cfc0');g.box(x-3,h+.7,z+3,2.5,.9,1.6,'#b1a699');
     const glass=['#536e7a','#657d84','#7e9193','#4d7779'],floors=Math.max(1,Math.floor((h-3)/3.15));
     for(let k=0;k<floors;k++){const y=3.1+k*3.15;
-      for(let n=0;n<Math.floor(w/3.5);n++){const xx=x+(n-(Math.floor(w/3.5)-1)/2)*3.5;g.box(xx,y,f+.05,2.55,1.55,.09,glass[Math.floor(r()*4)]);g.box(xx,y+.02,f+.103,.12,1.5,.04,'#d7beb0')}
-      for(let n=0;n<Math.floor(d/3.5);n++){const zz=z+(n-(Math.floor(d/3.5)-1)/2)*3.5;g.box(l-.06,y,zz,.1,1.6,2.5,glass[Math.floor(r()*4)],(k+n)%5===0?5:0);g.box(l-.12,y+.06,zz,.04,1.50,.10,'#cbb9a8');g.box(l-.13,y-.12,zz,.30,.14,2.7,'#e6c4a7')}
+      for(let n=0;n<Math.floor(w/3.5);n++){const xx=x+(n-(Math.floor(w/3.5)-1)/2)*3.5;g.box(xx,y,f+.05,2.55,1.55,.09,glass[Math.floor(r()*4)],6);g.box(xx,y+.02,f+.103,.12,1.5,.04,'#d7beb0')}
+      for(let n=0;n<Math.floor(d/3.5);n++){const zz=z+(n-(Math.floor(d/3.5)-1)/2)*3.5;g.box(l-.06,y,zz,.1,1.6,2.5,glass[Math.floor(r()*4)],(k+n)%5===0?5:6);g.box(l-.12,y+.06,zz,.04,1.50,.10,'#cbb9a8');g.box(l-.13,y-.12,zz,.30,.14,2.7,'#e6c4a7')}
       g.box(x,y-.36,z,w+.39,.22,d+.4,k%2?'#e8c6ad':'#d9b9a7')
     }
     for(let i=-1;i<=1;i++){g.box(x+i*w*.29,.26,f+.07,w*.23,2.2,.15,'#44666f');g.box(x+i*w*.29,.23,f+.2,.12,2.2,.13,'#e1c3a8')}
@@ -663,7 +677,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   function night(clock){return clamp(Math.min((clock-5)/2,(20.5-clock)/2.3),0,1)}
   function project(x,y,z){if(!basis)return null;const d=[x-eye[0],y-eye[1],z-eye[2]],dep=dot(d,basis[2]);return dep<.3?null:{x:(.5+dot(d,basis[0])/(dep*lens*aspect)*.5)*canvas.clientWidth,y:(.5-dot(d,basis[1])/(dep*lens)*.5)*canvas.clientHeight,dep}}
   function render(game,mode,dt,look){
-    const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,1.55,1750/Math.max(1,w));if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}aspect=w/h;gl.viewport(0,0,canvas.width,canvas.height);
+    const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,2,2560/Math.max(1,w));if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}aspect=w/h;gl.viewport(0,0,canvas.width,canvas.height);
     const p=game.player,v=game.vehicle,intro=mode==='title',ch=intro?0:v?v.h:look;
     if(!init)followH=ch;followH+=PC.angle(followH,ch)*Math.min(1,dt*5.2);
     let e,t;if(intro){const car=game.cars[0],sx=car.x,sz=car.z;const k=Math.sin(performance.now()*.000085)*.65;e=[sx-5.3+k,2.12,sz+6.9];t=[sx+.6,2.16,sz-8.6];if(aspect<.85){e=[sx-4.3,2.3,sz+8.9];t=[sx,2.12,sz-5.4]}lens=.49}
@@ -724,8 +738,8 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   stick.onpointerdown=e=>{if(stickPointer!==null)return;e.preventDefault();stickPointer=e.pointerId;stick.setPointerCapture(e.pointerId);moveStick(e)};
   stick.onpointermove=moveStick;
   stick.onlostpointercapture=stick.onpointerup=stick.onpointercancel=e=>{if(e.pointerId===stickPointer)centerStick()};
-  function clearKeys(){centerStick();held.clear();for(const input of [keys,touchInput])for(const key of Object.keys(input))delete input[key]}
-  function start(){if(!audioCtx)sound();mode='play';document.body.classList.add('live');look=game.player.h;renderer.reset();last=performance.now();game.notify(saved?.v===1?'Welcome back to UNBOUND':'Welcome to Ocean Drive',matchMedia('(any-pointer:coarse)').matches?'Tap Jobs to find work.':'WASD to move · F to enter or exit · J for jobs');updateHud();save()}
+  function clearKeys(){endDrag();centerStick();held.clear();for(const input of [keys,touchInput])for(const key of Object.keys(input))delete input[key]}
+  function start(){if(!audioCtx)sound();mode='play';document.body.classList.add('live');look=game.player.h;renderer.reset();last=performance.now();game.notify(saved?.v===1?'Welcome back to UNBOUND':'Welcome to Ocean Drive',matchMedia('(any-pointer:coarse)').matches?'Tap Jobs to find work.':'WASD to move · Drag left or right to steer · F to board or exit');updateHud();save()}
   $('hotelStart').onclick=()=>{game.inside=null;const r=PC.rooms[0];Object.assign(game.player,{car:null,x:r.x-2,z:r.z,h:Math.PI/2});start();game.notify('Palma Hotel','Walk toward the pink doorway and press E to enter.')};
   $('begin').onclick=start;$('walkStart').onclick=()=>{if(!saved||game.vehicle&&!game.toggleCar()){if(game.vehicle)game.vehicle.speed=0;Object.assign(game.player,{car:null,x:-38,z:48,h:0})}start();game.notify('On foot',matchMedia('(any-pointer:coarse)').matches?'Drag to walk. Tap Board beside a vehicle.':'WASD or arrows to walk · Shift to sprint · Enter to ride')};
   let audioCtx,master,engine,engineGain,audioOn=false,nextNote=0,note=0;
@@ -756,7 +770,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
       const line=handoff?(game.job.stage===0?'Thanks for bringing this in. Take my signed receipt back.':'You made it. Here’s the pay we agreed on.'):game.job?'Finish your current job, then come see me.':r.pitch;
       body.innerHTML='<p>'+line+'</p><div class="dialogactions">'+(handoff?'<button class="major" data-ui="handoff">Complete handoff</button>':!game.job?'<button class="major" data-job="'+c.id+'">Accept · $'+c.fee+'</button>':'')+'<button class="ghost" data-ui="resume">Leave conversation</button></div>'}
     if(which==='garage'){const names=['Sunset coral','Lagoon','Marigold','Sea salt','Orchid','Pacific blue','Cherry'];body.innerHTML='<p class="panelnote">A respray costs $80. Your balance is $'+game.money+'.</p><div class="paintgrid">'+PC.carColors.map((c,i)=>'<button class="ghost" data-paint="'+c+'" '+(game.money<80||game.vehicle?.color===c?'disabled':'')+'><i style="background:'+c+'"></i>'+names[i]+(game.vehicle?.color===c?' · Current':'')+'</button>').join('')+'</div>'}
-    if(which==='help'){body.innerHTML='<div class="controls">'+[['Drive or walk','W A S D / arrows'],['Brake or sprint','Space / Shift'],['Helicopter climb / descend','Space / C'],['Board, take or exit a vehicle','Enter or F'],['Talk, collect, or deliver','E'],['Look around on foot','Drag / Q and R'],['City map','M'],['Jobs','J'],['Pause or resume','Esc']].map(([n,k])=>'<div><span>'+n+'</span><kbd>'+k+'</kbd></div>').join('')+'</div><p class="panelnote">On touchscreens, drag the joystick to move or steer and drag the street view to look around on foot. Tap the minimap for the city map.</p>'}
+    if(which==='help'){body.innerHTML='<div class="controls">'+[['Drive or walk','W A S D / arrows'],['Brake or sprint','Space / Shift'],['Helicopter climb / descend','Space / C'],['Board, take or exit a vehicle','Enter or F'],['Talk, collect, or deliver','E'],['Steer any vehicle','Hold left mouse + drag'],['Look around on foot','Drag / Q and R'],['City map','M'],['Jobs','J'],['Pause or resume','Esc']].map(([n,k])=>'<div><span>'+n+'</span><kbd>'+k+'</kbd></div>').join('')+'</div><p class="panelnote">On touchscreens, drag the joystick to move or steer and drag the street view to look around on foot. Tap the minimap for the city map.</p>'}
     if(which==='pause'){body.innerHTML='<p class="panelnote">'+(storageOK?'Progress saved on this device.':'Saving is unavailable in this browser.')+'</p><div class="dialogactions"><button class="major" data-ui="resume">Resume game</button><button class="ghost" data-ui="help">Controls</button><button class="ghost" data-ui="map">City map</button><button class="ghost" data-ui="title">Title screen</button></div>'}
     if(which==='jobs'){const active=game.job;
       if(active){const o=game.objective();body.innerHTML='<div class="job"><div><small>ACTIVE · '+o.contract.type.toUpperCase()+'</small><h3>'+o.contract.name+'</h3><p>'+o.action+' at '+o.label+'. '+(o.mode==='foot'?'Approach on foot.':o.mode==='boat'?'Stop your boat at the buoy.':o.mode==='car'?'Stop your car at the marker.':'Drive through the gate.')+'</p></div><b>$'+o.contract.fee+'</b></div><div class="dialogactions"><button class="major" data-ui="resume">Continue job</button><button class="ghost" data-ui="cancel">Abandon job</button></div>'}
@@ -773,7 +787,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   });
   $('closePanel').onclick=close;$('helpTitle').onclick=()=>show('help');$('veil').addEventListener('click',e=>{if(e.target===$('veil'))close()});
   function command(cmd){if(game.busted)return;if(mode!=='play')return;if(['pause','map','jobs','help'].includes(cmd)){show(cmd);return}if(dialog)return;
-    if(cmd==='car'){const before=game.notice;if(game.toggleCar()){if(before===game.notice)game.notify(game.vehicle?(game.vehicle.heli?'Helicopter':game.vehicle.policeBoat?'Police launch':game.vehicle.boat?'Speedboat':game.vehicle.bike?'Motorcycle':'Driving'):'On foot',game.vehicle?'F to dismount or exit':'Walk beside a vehicle and press F or Enter.');look=game.player.h;renderer.reset();save()}}
+    if(cmd==='car'){endDrag();const before=game.notice;if(game.toggleCar()){if(before===game.notice)game.notify(game.vehicle?(game.vehicle.heli?'Helicopter':game.vehicle.policeBoat?'Police launch':game.vehicle.boat?'Speedboat':game.vehicle.bike?'Motorcycle':'Driving'):'On foot',game.vehicle?'F to dismount or exit':'Walk beside a vehicle and press F or Enter.');look=game.player.h;renderer.reset();save()}}
     if(cmd==='act'){if(game.room&&game.atHost())show('talk');else if(game.room||game.entrance()){if(game.doorway()){renderer.reset();clearKeys();save()}}else if(game.vehicle&&PC.dist(game.player,PC.garage)<10.5&&Math.abs(game.vehicle.speed)<1.7)show('garage');else game.interact()}updateHud()}
   document.querySelectorAll('[data-cmd]').forEach(b=>b.onclick=()=>command(b.dataset.cmd));
   const actions={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',KeyC:'descend',Space:'brake',ShiftLeft:'brake',ShiftRight:'brake',KeyQ:'lookLeft',KeyR:'lookRight'},commands={Enter:'car',KeyF:'car',KeyE:'act',KeyM:'map',KeyJ:'jobs',KeyH:'help',Escape:'pause'};
@@ -789,7 +803,23 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);held.set(e.pointerId,key);touchInput[key]=true};
     button.onpointerup=button.onpointercancel=button.onlostpointercapture=e=>{held.delete(e.pointerId);if(![...held.values()].includes(key))delete touchInput[key]};
   });
-  let drag=null;world.onpointerdown=e=>{if(mode==='play'&&!dialog&&!game.vehicle){drag=e.clientX;world.setPointerCapture(e.pointerId)}};world.onpointermove=e=>{if(drag!=null){look+=(e.clientX-drag)*.009;drag=e.clientX}};world.onpointerup=world.onpointercancel=()=>drag=null;
+  let drag=null,mouseSteer=0;
+  function endDrag(){
+    const id=drag?.id;drag=null;mouseSteer=0;
+    if(id!=null&&world.hasPointerCapture(id))world.releasePointerCapture(id);
+  }
+  world.onpointerdown=e=>{
+    if(drag||mode!=='play'||dialog||game.busted||e.button!==0||(game.vehicle&&e.pointerType!=='mouse'))return;
+    drag={id:e.pointerId,x:e.clientX,vehicle:game.vehicle};
+    world.setPointerCapture(e.pointerId);
+  };
+  world.onpointermove=e=>{
+    if(drag?.id!==e.pointerId)return;
+    if(drag.vehicle!==game.vehicle||dialog||game.busted){endDrag();return}
+    if(game.vehicle)mouseSteer=PC.clamp((e.clientX-drag.x)/Math.min(120,innerWidth*.18),-1,1);
+    else{look+=(e.clientX-drag.x)*.009;drag.x=e.clientX}
+  };
+  world.onpointerup=world.onpointercancel=world.onlostpointercapture=e=>{if(drag?.id===e.pointerId)endDrag()};
   window.addEventListener('blur',()=>{clearKeys();if(mode==='play'&&!dialog)show('pause')});document.addEventListener('visibilitychange',()=>{if(document.hidden){clearKeys();save();if(mode==='play'&&!dialog)show('pause')}});window.addEventListener('pagehide',save);
   const camera={x:145,z:-34,zoom:1};
   function openCityMap(map){
@@ -900,7 +930,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   }
   let accumulator=0;const fixed=1/120;
   function frame(now){const dt=Math.min(.12,Math.max(.001,(now-last)/1000));last=now;
-    if(!dialog){const input={...keys,...touchInput};accumulator+=dt;while(accumulator>=fixed){if(mode==='play'){if(!game.vehicle)look+=((+!!keys.lookRight)-(+!!keys.lookLeft))*fixed*1.8;game.tick(fixed,input,look)}else{for(const c of game.traffic)game.trafficTick(c,fixed);for(const n of game.people)game.pedTick(n,fixed);game.time+=fixed}accumulator-=fixed}
+    if(!dialog){const input={...keys,...touchInput,mouseSteer:drag?.vehicle===game.vehicle?mouseSteer:0};accumulator+=dt;while(accumulator>=fixed){if(mode==='play'){if(!game.vehicle)look+=((+!!keys.lookRight)-(+!!keys.lookLeft))*fixed*1.8;game.tick(fixed,input,look)}else{for(const c of game.traffic)game.trafficTick(c,fixed);for(const n of game.people)game.pedTick(n,fixed);game.time+=fixed}accumulator-=fixed}
       renderer.render(game,mode,dt,look);if(mode==='play'&&now-lastHud>110){updateHud();lastHud=now}if(mode==='play'&&(game.dirty||now-lastSave>4500)){save();lastSave=now}}
     audioTick();requestAnimationFrame(frame)
   }

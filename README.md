@@ -18,6 +18,8 @@ Explore a coastal city on foot, drive cars and motorcycles, pilot a helicopter, 
 | Open map / jobs / controls | M / J / H |
 | Pause | Esc |
 
+Hold the left mouse button over the street view and drag sideways to steer any vehicle. Drag farther for a tighter turn. Use W/S for speed and Space/C for helicopter altitude.
+
 On touchscreens, drag the left joystick to walk, accelerate, reverse, or steer. Hold Sprint while walking. Tap Board beside a vehicle and Exit to get out. In a helicopter, hold Climb to take off and Lower to land before exiting. Drag the street view to look around on foot. A WebGL-capable browser is required.
 
 ## Local play and development

@@ -13,16 +13,30 @@ function createRenderer(canvas){
       vec3 night=mix(vec3(.25,.24,.37),vec3(.035,.075,.17),smoothstep(0.,.48,h));vec3 col=mix(night,dusk,light);
       vec3 sun=normalize(vec3(-.37,.155,-.94));float sd=length(d-sun);col+=vec3(.32,.13,.02)*exp(-sd*6.)*light;
       col=mix(col,mix(vec3(.91,.89,.79),vec3(1.,.91,.61),light),1.-smoothstep(.052,.056,sd));
-      vec2 cp=d.xz/max(.055,d.y+.045)*vec2(2.,7.)+tm*.0004;float cloud=noise(cp)*.6+noise(cp*2.1)*.3+noise(cp*4.2)*.1;
+      col+=vec3(.22,.09,.035)*exp(-sd*sd*105.)*light;vec2 cp=d.xz/max(.055,d.y+.045)*vec2(2.,7.)+tm*.0004;float cloud=noise(cp)*.6+noise(cp*2.1)*.3+noise(cp*4.2)*.1;
       col=mix(col,mix(vec3(.25,.25,.40),vec3(.99,.75,.72),light),smoothstep(.58,.80,cloud)*smoothstep(.035,.14,h)*.48);gl_FragColor=vec4(col,1.);}`);
   const mesh=program(`attribute vec3 pos,col;attribute vec2 uv;attribute float mat;uniform vec3 eye,rightV,upV,forwardV,offset;uniform vec2 lens,rot;uniform float walk;
-    varying vec3 color,world;varying vec2 tex;varying float material,depth;
+    varying vec3 color,world,viewRay;varying vec2 tex;varying float material,depth;
     void main(){vec3 p=pos;if(walk!=0.&&p.y<.83)p.z+=sin(walk)*sign(p.x)*(.83-p.y)*.48;
-    world=vec3(p.x*rot.x-p.z*rot.y,p.y,p.x*rot.y+p.z*rot.x)+offset;vec3 d=world-eye;depth=dot(d,forwardV);
+    world=vec3(p.x*rot.x-p.z*rot.y,p.y,p.x*rot.y+p.z*rot.x)+offset;vec3 d=world-eye;viewRay=-d;depth=dot(d,forwardV);
     gl_Position=vec4(dot(d,rightV)/lens.x,dot(d,upV)/lens.y,depth*1.0006-.2801,depth);color=col;tex=uv;material=mat;}`,`
-    precision mediump float;varying vec3 color,world;varying vec2 tex;varying float material,depth;uniform float light,tm;uniform sampler2D atlas;
+    precision mediump float;varying vec3 color,world,viewRay;varying vec2 tex;varying float material,depth;uniform float light,tm;uniform sampler2D atlas;
     void main(){vec3 c=color;if(material>.5&&material<1.5)c*=texture2D(atlas,tex).rgb;
-      if(material>2.5&&material<3.5){float w=sin(world.z*2.1+world.x*.85+tm*1.4)*.5+sin(world.z*1.1-world.x*.55+tm)*.5;c+=vec3(.08,.13,.13)*smoothstep(.54,.94,w);}
+      if(material>2.5&&material<3.5){
+        vec3 view=normalize(viewRay);
+        float a=world.z*1.45+world.x*.42+tm*1.1,b=world.z*.63-world.x*1.21+tm*.85;
+        vec3 n=normalize(vec3(.07*cos(a)-.09*cos(b),1.,.16*cos(a)+.06*cos(b)));
+        float grazing=pow(1.-clamp(dot(n,view),0.,1.),3.);
+        vec3 reflection=mix(vec3(.32,.41,.58),vec3(.93,.59,.52),light);
+        c=mix(c,reflection,.12+.52*grazing);
+        vec3 halfVector=normalize(view+normalize(vec3(-.37,.155,-.94)));
+        c+=light*vec3(1.,.73,.43)*pow(max(dot(n,halfVector),0.),85.);
+      }
+      if(material>5.5&&material<6.5){
+        vec3 view=normalize(viewRay);
+        float skyline=smoothstep(-.15,.65,-view.y);
+        c=mix(c,mix(vec3(.93,.60,.53),vec3(.29,.52,.66),skyline),.28+.16*sin(world.y*.24));
+      }
       if(material>3.5&&material<4.5){float grit=fract(sin(dot(floor(world.xz*7.),vec2(12.989,7.233)))*127.41);c+=vec3(.018)*(grit-.5);}
       c*=mix(vec3(.27,.32,.51),vec3(1.),light);
       if(material>4.5&&material<5.5)c=mix(c,vec3(.99,.72,.40),.79*(1.-light));
@@ -73,8 +87,8 @@ function createRenderer(canvas){
     g.box(x+2,h+2.55,z-1,w*.43,.18,d*.4,'#e6cfc0');g.box(x-3,h+.7,z+3,2.5,.9,1.6,'#b1a699');
     const glass=['#536e7a','#657d84','#7e9193','#4d7779'],floors=Math.max(1,Math.floor((h-3)/3.15));
     for(let k=0;k<floors;k++){const y=3.1+k*3.15;
-      for(let n=0;n<Math.floor(w/3.5);n++){const xx=x+(n-(Math.floor(w/3.5)-1)/2)*3.5;g.box(xx,y,f+.05,2.55,1.55,.09,glass[Math.floor(r()*4)]);g.box(xx,y+.02,f+.103,.12,1.5,.04,'#d7beb0')}
-      for(let n=0;n<Math.floor(d/3.5);n++){const zz=z+(n-(Math.floor(d/3.5)-1)/2)*3.5;g.box(l-.06,y,zz,.1,1.6,2.5,glass[Math.floor(r()*4)],(k+n)%5===0?5:0);g.box(l-.12,y+.06,zz,.04,1.50,.10,'#cbb9a8');g.box(l-.13,y-.12,zz,.30,.14,2.7,'#e6c4a7')}
+      for(let n=0;n<Math.floor(w/3.5);n++){const xx=x+(n-(Math.floor(w/3.5)-1)/2)*3.5;g.box(xx,y,f+.05,2.55,1.55,.09,glass[Math.floor(r()*4)],6);g.box(xx,y+.02,f+.103,.12,1.5,.04,'#d7beb0')}
+      for(let n=0;n<Math.floor(d/3.5);n++){const zz=z+(n-(Math.floor(d/3.5)-1)/2)*3.5;g.box(l-.06,y,zz,.1,1.6,2.5,glass[Math.floor(r()*4)],(k+n)%5===0?5:6);g.box(l-.12,y+.06,zz,.04,1.50,.10,'#cbb9a8');g.box(l-.13,y-.12,zz,.30,.14,2.7,'#e6c4a7')}
       g.box(x,y-.36,z,w+.39,.22,d+.4,k%2?'#e8c6ad':'#d9b9a7')
     }
     for(let i=-1;i<=1;i++){g.box(x+i*w*.29,.26,f+.07,w*.23,2.2,.15,'#44666f');g.box(x+i*w*.29,.23,f+.2,.12,2.2,.13,'#e1c3a8')}
@@ -178,7 +192,7 @@ function createRenderer(canvas){
   function night(clock){return clamp(Math.min((clock-5)/2,(20.5-clock)/2.3),0,1)}
   function project(x,y,z){if(!basis)return null;const d=[x-eye[0],y-eye[1],z-eye[2]],dep=dot(d,basis[2]);return dep<.3?null:{x:(.5+dot(d,basis[0])/(dep*lens*aspect)*.5)*canvas.clientWidth,y:(.5-dot(d,basis[1])/(dep*lens)*.5)*canvas.clientHeight,dep}}
   function render(game,mode,dt,look){
-    const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,1.55,1750/Math.max(1,w));if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}aspect=w/h;gl.viewport(0,0,canvas.width,canvas.height);
+    const w=canvas.clientWidth,h=canvas.clientHeight,dpr=Math.min(devicePixelRatio||1,2,2560/Math.max(1,w));if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}aspect=w/h;gl.viewport(0,0,canvas.width,canvas.height);
     const p=game.player,v=game.vehicle,intro=mode==='title',ch=intro?0:v?v.h:look;
     if(!init)followH=ch;followH+=PC.angle(followH,ch)*Math.min(1,dt*5.2);
     let e,t;if(intro){const car=game.cars[0],sx=car.x,sz=car.z;const k=Math.sin(performance.now()*.000085)*.65;e=[sx-5.3+k,2.12,sz+6.9];t=[sx+.6,2.16,sz-8.6];if(aspect<.85){e=[sx-4.3,2.3,sz+8.9];t=[sx,2.12,sz-5.4]}lens=.49}

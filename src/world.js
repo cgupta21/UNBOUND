@@ -384,7 +384,7 @@ const PC = (() => {
       if(this.busted)return;
       if(this.inside){this.time+=dt;if(this.alert){this.patrolTick(dt);if(this.busted)return}const p=this.inside,dx=Number(!!input.right)-Number(!!input.left),dz=Number(!!input.down)-Number(!!input.up),len=Math.hypot(dx,dz);if(len){const step=dt*(input.brake?5.2:3.2)/len;const mall=p.id==='mall';const free=(x,z)=>Math.abs(x)<(mall?13.6:6.6)&&z> -2.15&&z<4.75&&!(Math.abs(x)>4&&(!mall||Math.abs(x)<6.9)&&Math.abs(z)<2.7);if(free(p.x+dx*step,p.z))p.x+=dx*step;if(free(p.x,p.z+dz*step))p.z+=dz*step;p.walk+=step*len*4;p.h=Math.atan2(dx,-dz)}if(this.job?.remaining!=null&&(this.job.remaining-=dt)<=0){this.endJob();this.notify('Time expired')}return}
       this.time+=dt;this.clock=(this.clock+dt/100)%24;
-      const p=this.player,v=this.vehicle,forward=(+!!input.up)-(+!!input.down),turn=(+!!input.right)-(+!!input.left);
+      const p=this.player,v=this.vehicle,forward=(+!!input.up)-(+!!input.down),turn=clamp((+!!input.right)-(+!!input.left)+(v?(input.mouseSteer||0):0),-1,1);
       if(v?.heli){
         const clearance=(x,z)=>{let floor=x< -40?3:0;
           for(const b of buildings)if(Math.abs(b.x-x)<b.w/2+2&&Math.abs(b.z-z)<b.d/2+2)floor=Math.max(floor,b.h+5);
