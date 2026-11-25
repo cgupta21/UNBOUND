@@ -28,11 +28,14 @@ const assert=require('node:assert/strict');
       if(kind==='heli'){await page.keyboard.down('Space');await page.evaluate(()=>advance(10));await page.keyboard.up('Space')}
       let previous=start;
       for(const direction of [1,-1]){
-        await page.keyboard.down('w');await page.mouse.move(450,320);await page.mouse.down();await page.mouse.move(450+100*direction,320);
-        await page.evaluate(()=>advance(7));await page.mouse.up();await page.keyboard.up('w');
+        await page.keyboard.down('w');await page.mouse.move(450,320);await page.mouse.move(450+210*direction,320);
+        await page.evaluate(()=>advance(7));await page.keyboard.up('w');
         const now=await state();assert.ok((now.h-previous.h)*direction>.025,kind+' heading '+previous.h+' -> '+now.h);
         assert.ok(Math.hypot(now.x-previous.x,now.z-previous.z)>.05);previous=now;
       }
+      await page.mouse.move(460,320);await page.keyboard.down('w');await page.evaluate(()=>advance(5));
+      const centered=await state();await page.keyboard.down('w');await page.evaluate(()=>advance(3));await page.keyboard.up('w');
+      assert.ok(Math.abs((await state()).h-centered.h)<.025,kind+' centered heading');
       assert.deepEqual(errors,[]);console.log(kind+' mouse steering passed');await page.close();
     }
   }finally{await browser.close()}
