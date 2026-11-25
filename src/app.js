@@ -8,10 +8,29 @@
   function district(p){return p.x< -8?'Coral Beach':p.x<15?'Ocean Drive':p.x>272?'Galleria District':p.x>210?'East Keys':p.x>144?'Skyline Heights':p.z< -68?'Arts Quarter':p.z<0?'Marina Gardens':'Palma District'}
   $('titlePlace').textContent=district(game.cars[0]);
   function save(){if(mode==='title')return;try{localStorage.setItem(key,JSON.stringify(game.save()));game.dirty=false}catch{if(storageOK)game.notify('Saving unavailable','This browser is blocking local storage.');storageOK=false}}
-  const clearKeys=()=>Object.keys(keys).forEach(k=>delete keys[k]);
-  function start(){if(!audioCtx)sound();mode='play';document.body.classList.add('live');look=game.player.h;renderer.reset();last=performance.now();game.notify(saved?.v===1?'Welcome back to UNBOUND':'Welcome to Ocean Drive',matchMedia('(pointer:coarse)').matches?'Tap Jobs to find work.':'WASD to move · F to enter or exit · J for jobs');updateHud();save()}
+  const stick=$('stick'),touchInput={},held=new Map();
+  let stickPointer=null;
+  function centerStick(){
+    stickPointer=null;stick.style.setProperty('--dx','0px');stick.style.setProperty('--dy','0px');
+    for(const key of ['up','down','left','right'])delete touchInput[key];
+  }
+  function moveStick(e){
+    if(e.pointerId!==stickPointer)return;
+    const box=stick.getBoundingClientRect(),radius=box.width/2;
+    const x=(e.clientX-box.left-radius)/radius,y=(e.clientY-box.top-radius)/radius;
+    const scale=radius*.57/Math.max(1,Math.hypot(x,y));
+    stick.style.setProperty('--dx',x*scale+'px');stick.style.setProperty('--dy',y*scale+'px');
+    for(const [key,value] of Object.entries({right:x,left:-x,down:y,up:-y})){
+      if(value>.22)touchInput[key]=true;else delete touchInput[key];
+    }
+  }
+  stick.onpointerdown=e=>{if(stickPointer!==null)return;e.preventDefault();stickPointer=e.pointerId;stick.setPointerCapture(e.pointerId);moveStick(e)};
+  stick.onpointermove=moveStick;
+  stick.onlostpointercapture=stick.onpointerup=stick.onpointercancel=e=>{if(e.pointerId===stickPointer)centerStick()};
+  function clearKeys(){centerStick();held.clear();for(const input of [keys,touchInput])for(const key of Object.keys(input))delete input[key]}
+  function start(){if(!audioCtx)sound();mode='play';document.body.classList.add('live');look=game.player.h;renderer.reset();last=performance.now();game.notify(saved?.v===1?'Welcome back to UNBOUND':'Welcome to Ocean Drive',matchMedia('(any-pointer:coarse)').matches?'Tap Jobs to find work.':'WASD to move · F to enter or exit · J for jobs');updateHud();save()}
   $('hotelStart').onclick=()=>{game.inside=null;const r=PC.rooms[0];Object.assign(game.player,{car:null,x:r.x-2,z:r.z,h:Math.PI/2});start();game.notify('Palma Hotel','Walk toward the pink doorway and press E to enter.')};
-  $('begin').onclick=start;$('walkStart').onclick=()=>{if(!saved||game.vehicle&&!game.toggleCar()){if(game.vehicle)game.vehicle.speed=0;Object.assign(game.player,{car:null,x:-38,z:48,h:0})}start();game.notify('On foot','WASD or arrows to walk · Shift to sprint · Enter to ride')};
+  $('begin').onclick=start;$('walkStart').onclick=()=>{if(!saved||game.vehicle&&!game.toggleCar()){if(game.vehicle)game.vehicle.speed=0;Object.assign(game.player,{car:null,x:-38,z:48,h:0})}start();game.notify('On foot',matchMedia('(any-pointer:coarse)').matches?'Drag to walk. Tap Board beside a vehicle.':'WASD or arrows to walk · Shift to sprint · Enter to ride')};
   let audioCtx,master,engine,engineGain,audioOn=false,nextNote=0,note=0;
   const sirens=new Map();let rotor;
   function sound(){try{if(!audioCtx){audioCtx=new AudioContext();master=audioCtx.createGain();master.gain.value=.18;master.connect(audioCtx.destination);engine=audioCtx.createOscillator();engine.type='triangle';engineGain=audioCtx.createGain();engineGain.gain.value=.03;engine.connect(engineGain).connect(master);engine.start()}audioOn=!audioOn;if(audioOn){audioCtx.resume();nextNote=audioCtx.currentTime}else audioCtx.suspend();$('soundText').textContent=audioOn?'Audio on':'Audio off';$('sound').setAttribute('aria-label',audioOn?'Turn audio off':'Turn audio on')}catch{game.notify('Audio unavailable')}}
@@ -40,7 +59,7 @@
       const line=handoff?(game.job.stage===0?'Thanks for bringing this in. Take my signed receipt back.':'You made it. Here’s the pay we agreed on.'):game.job?'Finish your current job, then come see me.':r.pitch;
       body.innerHTML='<p>'+line+'</p><div class="dialogactions">'+(handoff?'<button class="major" data-ui="handoff">Complete handoff</button>':!game.job?'<button class="major" data-job="'+c.id+'">Accept · $'+c.fee+'</button>':'')+'<button class="ghost" data-ui="resume">Leave conversation</button></div>'}
     if(which==='garage'){const names=['Sunset coral','Lagoon','Marigold','Sea salt','Orchid','Pacific blue','Cherry'];body.innerHTML='<p class="panelnote">A respray costs $80. Your balance is $'+game.money+'.</p><div class="paintgrid">'+PC.carColors.map((c,i)=>'<button class="ghost" data-paint="'+c+'" '+(game.money<80||game.vehicle?.color===c?'disabled':'')+'><i style="background:'+c+'"></i>'+names[i]+(game.vehicle?.color===c?' · Current':'')+'</button>').join('')+'</div>'}
-    if(which==='help'){body.innerHTML='<div class="controls">'+[['Drive or walk','W A S D / arrows'],['Brake or sprint','Space / Shift'],['Helicopter climb / descend','Space / C'],['Board, take or exit a vehicle','Enter or F'],['Talk, collect, or deliver','E'],['Look around on foot','Drag / Q and R'],['City map','M'],['Jobs','J'],['Pause or resume','Esc']].map(([n,k])=>'<div><span>'+n+'</span><kbd>'+k+'</kbd></div>').join('')+'</div><p class="panelnote">On touchscreens, use the arrow pads and drag the street view to look around on foot. Tap the minimap for the city map.</p>'}
+    if(which==='help'){body.innerHTML='<div class="controls">'+[['Drive or walk','W A S D / arrows'],['Brake or sprint','Space / Shift'],['Helicopter climb / descend','Space / C'],['Board, take or exit a vehicle','Enter or F'],['Talk, collect, or deliver','E'],['Look around on foot','Drag / Q and R'],['City map','M'],['Jobs','J'],['Pause or resume','Esc']].map(([n,k])=>'<div><span>'+n+'</span><kbd>'+k+'</kbd></div>').join('')+'</div><p class="panelnote">On touchscreens, drag the joystick to move or steer and drag the street view to look around on foot. Tap the minimap for the city map.</p>'}
     if(which==='pause'){body.innerHTML='<p class="panelnote">'+(storageOK?'Progress saved on this device.':'Saving is unavailable in this browser.')+'</p><div class="dialogactions"><button class="major" data-ui="resume">Resume game</button><button class="ghost" data-ui="help">Controls</button><button class="ghost" data-ui="map">City map</button><button class="ghost" data-ui="title">Title screen</button></div>'}
     if(which==='jobs'){const active=game.job;
       if(active){const o=game.objective();body.innerHTML='<div class="job"><div><small>ACTIVE · '+o.contract.type.toUpperCase()+'</small><h3>'+o.contract.name+'</h3><p>'+o.action+' at '+o.label+'. '+(o.mode==='foot'?'Approach on foot.':o.mode==='boat'?'Stop your boat at the buoy.':o.mode==='car'?'Stop your car at the marker.':'Drive through the gate.')+'</p></div><b>$'+o.contract.fee+'</b></div><div class="dialogactions"><button class="major" data-ui="resume">Continue job</button><button class="ghost" data-ui="cancel">Abandon job</button></div>'}
@@ -68,7 +87,11 @@
     if(!dialog&&actions[e.code]){e.preventDefault();keys[e.code==='Space'&&game.vehicle?.heli?'rise':actions[e.code]]=true}
   });
   window.addEventListener('keyup',e=>{if(e.code==='Space')delete keys.rise;if(actions[e.code])delete keys[actions[e.code]]});
-  document.querySelectorAll('[data-hold]').forEach(b=>{const k=b.dataset.hold;b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys[k]=true};b.onlostpointercapture=b.onpointerup=b.onpointercancel=()=>delete keys[k]});
+  document.querySelectorAll('[data-hold]').forEach(button=>{
+    const key=button.dataset.hold;
+    button.onpointerdown=e=>{e.preventDefault();button.setPointerCapture(e.pointerId);held.set(e.pointerId,key);touchInput[key]=true};
+    button.onpointerup=button.onpointercancel=button.onlostpointercapture=e=>{held.delete(e.pointerId);if(![...held.values()].includes(key))delete touchInput[key]};
+  });
   let drag=null;world.onpointerdown=e=>{if(mode==='play'&&!dialog&&!game.vehicle){drag=e.clientX;world.setPointerCapture(e.pointerId)}};world.onpointermove=e=>{if(drag!=null){look+=(e.clientX-drag)*.009;drag=e.clientX}};world.onpointerup=world.onpointercancel=()=>drag=null;
   window.addEventListener('blur',()=>{clearKeys();if(mode==='play'&&!dialog)show('pause')});document.addEventListener('visibilitychange',()=>{if(document.hidden){clearKeys();save();if(mode==='play'&&!dialog)show('pause')}});window.addEventListener('pagehide',save);
   const mapTransform=(c,full)=>{const k=full?Math.min(c.width/580,c.height/390):c.width/108;return {k,ox:c.width/2-(full?145:game.player.x)*k,oz:c.height/2-(full?-34:game.player.z)*k}};
@@ -102,15 +125,18 @@
     if(mode!=='play')return;document.querySelector('.topbuttons [data-cmd=car]').textContent=game.vehicle?'Get out / walk':'Board / ride';const p=game.player,v=game.vehicle,o=game.objective(),dd=o?Math.round(PC.dist(p,o)):0,t=game.clock,hh=Math.floor(t);
     $('district').textContent=district(p);$('roadName').textContent=district(p).toUpperCase();$('time').textContent=String(hh).padStart(2,'0')+':'+String(Math.floor((t-hh)*60)).padStart(2,'0');$('money').textContent='$'+game.money;
     $('alertState').hidden=!game.alert;if(game.alert)$('alertState').textContent='★'.repeat(game.alert.level)+ (game.alert.seen?' WANTED':' SEARCHING · '+Math.ceil(8-game.alert.unseen)+'s')+(game.air?' · AIR':'')+(game.marine.length?' · MARINE':'');
-    $('speed').textContent=v?String(Math.round(Math.abs(v.speed)*3.6)).padStart(3,'0'):'Foot';$('unit').textContent=v?'KM/H':'ON FOOT';$('gear').textContent=v?(Math.abs(v.speed)<.35?'P':v.speed<0?'R':'D'):(keys.brake?'RUN':'WALK');
+    $('speed').textContent=v?String(Math.round(Math.abs(v.speed)*3.6)).padStart(3,'0'):'Foot';$('unit').textContent=v?'KM/H':'ON FOOT';$('gear').textContent=v?(Math.abs(v.speed)<.35?'P':v.speed<0?'R':'D'):((keys.brake||touchInput.brake)?'RUN':'WALK');
     $('jobType').textContent=o?(o.contract.type.toUpperCase()+(game.job.remaining!=null?' · '+Math.ceil(game.job.remaining)+' s':'')):'JOB BOARD';
     $('jobTitle').textContent=o?o.action:'Available jobs';$('jobHint').textContent=o?o.label+' · '+dd+' m':game.done.length+' / '+PC.contracts.length+' complete · Open jobs';
-    const use=matchMedia('(pointer:coarse)').matches?'Use':'E',entry=matchMedia('(pointer:coarse)').matches?'Car':'F';
+    const use=matchMedia('(any-pointer:coarse)').matches?'Use':'E',entry=matchMedia('(any-pointer:coarse)').matches?'Board':'F';
     let prompt='';if(o&&dd<(o.mode==='foot'?4:11)&&o.mode!=='gate'){prompt=o.mode==='foot'&&v?'Step out to '+o.action.toLowerCase():o.mode==='boat'&&!v?.boat?'Bring a speedboat':o.mode==='car'&&!v?'Bring a car to this stop':v&&Math.abs(v.speed)>1.7?'Stop at the marker':'<kbd>'+use+'</kbd> '+o.action}
     else if(v&&PC.dist(p,PC.garage)<10.5)prompt=Math.abs(v.speed)<1.7?'<kbd>'+use+'</kbd> Open paint shop':'Stop for Palma Auto';
     else if(!v){const film=PC.film.some((f,i)=>!game.found.includes(i)&&PC.dist(p,f)<3.5),npc=game.nearestPed();prompt=film?'<kbd>'+use+'</kbd> Collect film roll':npc?'<kbd>'+use+'</kbd> Talk to '+npc.name:game.nearestCar()?'<kbd>'+entry+'</kbd> '+(game.nearestCar().a?'Take NPC '+(game.nearestCar().bike?'motorcycle':'car'):'Board vehicle'):''}
+    const board=document.querySelector('#touch [data-cmd=car]'),brake=document.querySelector('#touch [data-hold=brake]');
+    board.textContent=v?'Exit':'Board';if(v?.boat&&!v.policeBoat&&game.nearbyPatrolBoat())board.textContent='Take boat';
+    brake.textContent=v?'Brake':'Sprint';brake.hidden=!!v?.heli;
     document.body.classList.toggle('flying',!!v?.heli);
-    if(v?.heli){$('gear').textContent=Math.round(v.alt)+' m';prompt=v.alt>.05?'Space · Climb &nbsp; C · Descend':'Space · Take off &nbsp; F · Exit'}
+    if(v?.heli){$('gear').textContent=Math.round(v.alt)+' m';prompt=matchMedia('(any-pointer:coarse)').matches?(v.alt>.05?'Lower to land':'Hold Climb to take off'):v.alt>.05?'Space · Climb &nbsp; C · Descend':'Space · Take off &nbsp; F · Exit'}
     if((!v||v.boat&&!v.policeBoat)&&game.nearbyPatrolBoat())prompt='<kbd>'+entry+'</kbd> Take police launch';
     if(!v&&game.nearestCar()?.heli)prompt='<kbd>'+entry+'</kbd> Board helicopter';
     const r=game.room||game.entrance();if(r){if(game.room){$('district').textContent=r.label;$('roadName').textContent=r.label.toUpperCase();prompt=game.atHost()?'<kbd>'+use+'</kbd> Talk to '+r.host:game.atExit()?'<kbd>'+use+'</kbd> Exit to street':'Walk to '+r.host+' at the counter'}else prompt='<kbd>'+use+'</kbd> Enter '+r.label}
@@ -121,7 +147,7 @@
   }
   let accumulator=0;const fixed=1/120;
   function frame(now){const dt=Math.min(.12,Math.max(.001,(now-last)/1000));last=now;
-    if(!dialog){accumulator+=dt;while(accumulator>=fixed){if(mode==='play'){if(!game.vehicle)look+=((+!!keys.lookRight)-(+!!keys.lookLeft))*fixed*1.8;game.tick(fixed,keys,look)}else{for(const c of game.traffic)game.trafficTick(c,fixed);for(const n of game.people)game.pedTick(n,fixed);game.time+=fixed}accumulator-=fixed}
+    if(!dialog){const input={...keys,...touchInput};accumulator+=dt;while(accumulator>=fixed){if(mode==='play'){if(!game.vehicle)look+=((+!!keys.lookRight)-(+!!keys.lookLeft))*fixed*1.8;game.tick(fixed,input,look)}else{for(const c of game.traffic)game.trafficTick(c,fixed);for(const n of game.people)game.pedTick(n,fixed);game.time+=fixed}accumulator-=fixed}
       renderer.render(game,mode,dt,look);if(mode==='play'&&now-lastHud>110){updateHud();lastHud=now}if(mode==='play'&&(game.dirty||now-lastSave>4500)){save();lastSave=now}}
     audioTick();requestAnimationFrame(frame)
   }
