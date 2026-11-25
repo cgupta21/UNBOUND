@@ -6,8 +6,9 @@ const PC = (() => {
   const rand=seed(731), solids=[], buildings=[], lots=[], props=[];
   const paints=['#ef8d78','#89b8ad','#dfb5a0','#f5ca9a','#aba2b9','#e1cfc0','#89aeb7'];
   function block(x,z,w,d,h,paint,type,sign=''){const b={x,z,w,d,h,paint,type,sign,seed:Math.floor(rand()*65535)};if(type!=='store' && ((x>55&&x<245)||sign==='PALMA'||sign==='OCEAN CLUB')){
-      b.podium=h;b.h=h+14+b.seed%29;
+      b.h=h+14+b.seed%29;
     }
+    if(type!=='store'&&x>=245&&b.seed%3!==0)b.h+=22+b.seed%34;
     buildings.push(b);solids.push(b);return b}
   const names=['PALMA','SUNDIAL','AZURE','MIRAGE','OCEAN CLUB','BAY RECORDS','PARADISO','LIDO','RIVIERA','NOVA'];
   for(let i=0;i<xs.length-1;i++)for(let j=0;j<5;j++){
