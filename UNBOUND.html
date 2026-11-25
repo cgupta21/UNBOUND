@@ -24,6 +24,12 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
   body.live #touch{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right))}
   .topbuttons [data-cmd=car]{display:none}
 }
+
+#mapFull{height:min(50dvh,420px);max-height:none;touch-action:none;cursor:grab;user-select:none}
+#mapFull:active{cursor:grabbing}
+.maptools{display:flex;align-items:center;gap:6px;margin-top:8px}
+.maptools button{min-width:44px;min-height:44px;padding:5px 12px}
+
 </style></head>
 <body><canvas id="world" aria-label="3D UNBOUND game world"></canvas><div id="shade"></div>
 <svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs><symbol id="sun" viewBox="0 0 60 42"><path d="M6 23a24 24 0 0 1 48 0Z M5 26h50v3H5z M9 32h42v3H9z M16 38h28v2H16z" fill="currentColor"/></symbol></defs></svg>
@@ -757,7 +763,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
       else body.innerHTML=PC.contracts.map(c=>'<article class="job"><div><small>'+c.type.toUpperCase()+' · $'+c.fee+(game.done.includes(c.id)?' · COMPLETED':'')+'</small><h3>'+c.name+'</h3><p>'+c.desc+'</p></div><button class="major" data-job="'+c.id+'">'+(game.done.includes(c.id)?'Replay':'Accept')+'</button></article>').join('');
       body.innerHTML+='<div class="sectionline">'+game.done.length+' / '+PC.contracts.length+' jobs completed &nbsp; · &nbsp; '+game.found.length+' / 5 lost film rolls recovered</div>'
     }
-    if(which==='map'){body.innerHTML='<canvas id="mapFull" width="800" height="760" aria-label="City map. Click or tap a location to place a waypoint."></canvas><div class="legend"><span><i>▲</i> You</span><span><b>◆</b> Objective</span><span><em>●</em> Waypoint</span><span>▰ Parked vehicle · Pink square: entrance</span></div><p class="panelnote">Click or tap the map to set a waypoint.</p><div class="dialogactions"><button class="ghost" data-ui="clear">Clear waypoint</button><button class="major" data-ui="resume">Back to game</button></div>';const map=$('mapFull');drawMap(map,true);map.onclick=e=>{const box=map.getBoundingClientRect(),factor=Math.min(box.width/map.width,box.height/map.height),ox=(box.width-map.width*factor)/2,oy=(box.height-map.height*factor)/2;const x=(e.clientX-box.left-ox)/factor,z=(e.clientY-box.top-oy)/factor;if(x<0||x>map.width||z<0||z>map.height)return;const tr=mapTransform(map,true);waypoint={x:PC.clamp((x-tr.ox)/tr.k,-130,420),z:PC.clamp((z-tr.oz)/tr.k,-216,148)};drawMap(map,true)}}
+    if(which==='map'){body.innerHTML='<canvas id="mapFull" width="800" height="760" aria-label="City map. Click or tap a location to place a waypoint."></canvas><div class="legend"><span><i>▲</i> You</span><span><b>◆</b> Objective</span><span><em>●</em> Waypoint</span><span>▰ Parked vehicle · Pink square: entrance</span></div><p class="panelnote">Drag to pan. Scroll or pinch to zoom. Tap to set a waypoint.</p><div class="maptools"><button class="ghost" id="zoomOut" aria-label="Zoom out">−</button><button class="ghost" id="fitMap">Fit city</button><button class="ghost" id="zoomIn" aria-label="Zoom in">+</button></div><div class="dialogactions"><button class="ghost" data-ui="clear">Clear waypoint</button><button class="major" data-ui="resume">Back to game</button></div>';openCityMap($('mapFull'))}
     if(which==='map'){const btn=document.createElement('button');btn.className='ghost';btn.dataset.ui='garageRoute';btn.textContent='Route to paint shop';body.querySelector('.dialogactions').append(btn)}
     panel.focus();updateHud()
   }
@@ -785,7 +791,63 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   });
   let drag=null;world.onpointerdown=e=>{if(mode==='play'&&!dialog&&!game.vehicle){drag=e.clientX;world.setPointerCapture(e.pointerId)}};world.onpointermove=e=>{if(drag!=null){look+=(e.clientX-drag)*.009;drag=e.clientX}};world.onpointerup=world.onpointercancel=()=>drag=null;
   window.addEventListener('blur',()=>{clearKeys();if(mode==='play'&&!dialog)show('pause')});document.addEventListener('visibilitychange',()=>{if(document.hidden){clearKeys();save();if(mode==='play'&&!dialog)show('pause')}});window.addEventListener('pagehide',save);
-  const mapTransform=(c,full)=>{const k=full?Math.min(c.width/580,c.height/390):c.width/108;return {k,ox:c.width/2-(full?145:game.player.x)*k,oz:c.height/2-(full?-34:game.player.z)*k}};
+  const camera={x:145,z:-34,zoom:1};
+  function openCityMap(map){
+    const pointers=new Map();
+    let dragged=false,start;
+    function redraw(){
+      const rect=map.getBoundingClientRect(),density=Math.min(devicePixelRatio,2);
+      const w=Math.round(rect.width*density),h=Math.round(rect.height*density);
+      if(map.width!==w||map.height!==h){map.width=w;map.height=h}
+      const {k}=mapTransform(map,true);
+      const limitX=Math.max(0,290-w/(2*k)),limitZ=Math.max(0,195-h/(2*k));
+      camera.x=PC.clamp(camera.x,145-limitX,145+limitX);
+      camera.z=PC.clamp(camera.z,-34-limitZ,-34+limitZ);
+      drawMap(map,true);
+    }
+    function position(e){const r=map.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top}}
+    function change(from,to,scale){
+      const {k}=mapTransform(map,true),r=map.getBoundingClientRect();
+      const old=camera.zoom;camera.zoom=PC.clamp(old*scale,1,8);
+      const ratio=old/camera.zoom;
+      camera.x+=((from.x-r.width/2)-(to.x-r.width/2)*ratio)*map.width/r.width/k;
+      camera.z+=((from.y-r.height/2)-(to.y-r.height/2)*ratio)*map.height/r.height/k;
+      redraw();
+    }
+    function gesture(){
+      const [a,b]=pointers.values();
+      return b?{x:(a.x+b.x)/2,y:(a.y+b.y)/2,span:Math.hypot(a.x-b.x,a.y-b.y)}:{...a,span:0};
+    }
+    map.onpointerdown=e=>{
+      if(e.button!==0||pointers.size>=2)return;
+      const p=position(e);if(!pointers.size){start=p;dragged=false}else dragged=true;
+      pointers.set(e.pointerId,p);map.setPointerCapture(e.pointerId);
+    };
+    map.onpointermove=e=>{
+      if(!pointers.has(e.pointerId))return;
+      const before=gesture(),p=position(e);pointers.set(e.pointerId,p);
+      if(Math.hypot(p.x-start.x,p.y-start.y)>4)dragged=true;
+      if(dragged){const after=gesture();change(before,after,before.span&&after.span?after.span/before.span:1)}
+    };
+    map.onpointerup=e=>{
+      if(!pointers.delete(e.pointerId)||dragged)return;
+      const p=position(e),r=map.getBoundingClientRect(),t=mapTransform(map,true);
+      const x=(p.x*map.width/r.width-t.ox)/t.k,z=(p.y*map.height/r.height-t.oz)/t.k;
+      if(x>=-130&&x<=420&&z>=-216&&z<=148){waypoint={x,z};redraw()}
+    };
+    map.onlostpointercapture=map.onpointercancel=e=>{pointers.delete(e.pointerId)};
+    map.addEventListener('wheel',e=>{
+      e.preventDefault();const p=position(e);
+      change(p,p,Math.exp(-PC.clamp(e.deltaY*(e.deltaMode?16:1),-500,500)*.002));
+    },{passive:false});
+    for(const [id,factor] of [['zoomIn',1.5],['zoomOut',1/1.5]]){
+      $(id).onclick=()=>{const r=map.getBoundingClientRect(),p={x:r.width/2,y:r.height/2};change(p,p,factor)};
+    }
+    $('fitMap').onclick=()=>{Object.assign(camera,{x:145,z:-34,zoom:1});redraw()};
+    const resize=new ResizeObserver(()=>{if(map.isConnected)redraw();else resize.disconnect()});
+    resize.observe(map);redraw();
+  }
+  const mapTransform=(c,full)=>{const k=full?Math.min(c.width/580,c.height/390)*camera.zoom:c.width/108;return {k,ox:c.width/2-(full?camera.x:game.player.x)*k,oz:c.height/2-(full?camera.z:game.player.z)*k}};
   function route(p,o){
     const nodes=[];for(const x of PC.xs)for(const z of PC.zs)nodes.push({x,z});
     function attach(p){let best=Infinity,ans;for(const a of nodes)for(const b of nodes){if(Math.abs(PC.dist(a,b)-68)>.01||a.x>b.x||a.z>b.z)continue;const t=PC.clamp(((p.x-a.x)*(b.x-a.x)+(p.z-a.z)*(b.z-a.z))/4624,0,1),q={x:a.x+(b.x-a.x)*t,z:a.z+(b.z-a.z)*t},d=PC.dist(p,q);if(d<best){best=d;ans={a,b,q}}}return ans}

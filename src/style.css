@@ -23,3 +23,9 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
   body.live #touch{left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right))}
   .topbuttons [data-cmd=car]{display:none}
 }
+
+#mapFull{height:min(50dvh,420px);max-height:none;touch-action:none;cursor:grab;user-select:none}
+#mapFull:active{cursor:grabbing}
+.maptools{display:flex;align-items:center;gap:6px;margin-top:8px}
+.maptools button{min-width:44px;min-height:44px;padding:5px 12px}
+
