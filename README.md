@@ -29,4 +29,4 @@ node build.cjs
 node --test tests/world.test.cjs
 ~~~
 
-GitHub Pages serves **docs/index.html** from **main**. The browser playthrough in **tests/browser.cjs** uses Playwright with Microsoft Edge. Set **PALM_PLAYWRIGHT** to the installed Playwright module path if it is outside the normal Node module search path.
+GitHub Pages serves **docs/index.html** from **main**. The browser playthrough in **tests/browser.cjs** uses Playwright with Microsoft Edge. Set **UNBOUND_PLAYWRIGHT** to the installed Playwright module path if it is outside the normal Node module search path.

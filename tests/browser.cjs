@@ -1,12 +1,12 @@
-// Run with PALM_PLAYWRIGHT pointing at a Playwright installation if it is not on NODE_PATH.
-const {chromium} = require(process.env.PALM_PLAYWRIGHT || 'playwright');
+// Run with UNBOUND_PLAYWRIGHT pointing at a Playwright installation if it is not on NODE_PATH.
+const {chromium} = require(process.env.UNBOUND_PLAYWRIGHT || 'playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {pathToFileURL} = require('node:url');
 const url=pathToFileURL(path.resolve(__dirname,'../UNBOUND.html')).href;
-const captures=process.env.PALM_CAPTURES || os.tmpdir();
+const captures=process.env.UNBOUND_CAPTURES || os.tmpdir();
 async function main(){
   const browser=await chromium.launch({channel:'msedge',headless:true,args:['--enable-unsafe-swiftshader','--use-angle=swiftshader']});
   try{
@@ -20,7 +20,7 @@ async function main(){
     const step=t=>p.evaluate(t=>window.stepGame(t),t);
     const press=k=>p.keyboard.press(k);
     const hold=async(k,t)=>{await p.keyboard.down(k);await step(t);await p.keyboard.up(k)};
-    const shot=name=>p.screenshot({path:path.join(captures,'palm-'+name+'.png')});
+    const shot=name=>p.screenshot({path:path.join(captures,'unbound-'+name+'.png')});
     await step(.1);await shot('title');await p.getByText('Controls',{exact:true}).first().click();assert.equal(await p.locator('#panelTitle').innerText(),'Controls');await press('Escape');
     await p.locator('#begin').click();await step(.2);await shot('drive');
     await press('j');await p.locator('[data-job="fare"]').click();await step(.1);
