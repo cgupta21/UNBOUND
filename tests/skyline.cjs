@@ -8,7 +8,14 @@ const assert=require('node:assert/strict');
  const page=await browser.newPage({viewport:{width:1100,height:700}});
  await page.addInitScript(()=>{let frame,time;requestAnimationFrame=f=>(frame=f,1);window.advance=n=>{time=Math.max(time||0,performance.now());while(n--)frame(time+=100)}});
  await page.goto(process.env.UNBOUND_URL||pathToFileURL(path.resolve(__dirname,'../UNBOUND.html')).href);
- assert.ok(await page.locator('#error').isHidden());await page.locator('#skylineStart').click();
+ assert.equal(await page.locator('#hotelStart').count(),0);assert.ok(await page.locator('#error').isHidden());await page.locator('#skylineStart').click();
+ async function headlights(){
+   return page.evaluate(()=>{advance(1);const gl=document.querySelector('#world').getContext('webgl');
+     const program=gl.getParameter(gl.CURRENT_PROGRAM);
+     return gl.getUniform(program,gl.getUniformLocation(program,'lamps'))[0]});
+ }
+ assert.equal(await headlights(),1);await page.keyboard.press('l');assert.equal(await headlights(),0);
+ await page.keyboard.press('l');assert.equal(await headlights(),1);
  await page.keyboard.down('w');await page.evaluate(()=>advance(30));await page.keyboard.up('w');await page.evaluate(()=>advance(20));
  const shot=path.join(os.tmpdir(),'unbound-sunset-drive.jpg');await page.screenshot({path:shot});console.log(shot);
  await page.keyboard.press('Escape');const save=await page.evaluate(()=>JSON.parse(localStorage.getItem('unbound-save-1')));
