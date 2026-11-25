@@ -498,7 +498,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   const uniforms=(p,attrs,unifs)=>Object.fromEntries([...attrs.map(k=>[k,gl.getAttribLocation(p,k)]),...unifs.map(k=>[k,gl.getUniformLocation(p,k)])]);
   const su=uniforms(sky,['a'],['rightV','upV','forwardV','lens','light','tm']),mu=uniforms(mesh,['pos','col','uv','mat'],['eye','rightV','upV','forwardV','lens','offset','rot','light','walk','tm','atlas']);
   const quadBuf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
-  const labels=[...new Set([...PC.buildings.map(b=>b.sign),'PALM COUNTY','BEACH CLUB','RECORDS','OCEAN DRIVE','SURF SHOP'])];
+  const labels=[...new Set([...PC.buildings.map(b=>b.sign),'UNBOUND','BEACH CLUB','RECORDS','OCEAN DRIVE','SURF SHOP'])];
   const sheet=document.createElement('canvas');sheet.width=1024;sheet.height=1024;const art=sheet.getContext('2d');
   labels.forEach((s,i)=>{const x=(i%2)*512,y=Math.floor(i/2)*96;art.fillStyle=i%3===0?'#326764':i%3===1?'#994d57':'#51536c';art.fillRect(x,y,512,96);art.strokeStyle='#eed29d';art.lineWidth=3;art.strokeRect(x+7,y+6,498,84);art.fillStyle='#ffedc3';art.textAlign='center';art.textBaseline='middle';art.font='italic 900 52px Georgia';art.fillText(s,x+256,y+46,474)});
   const texture=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,texture);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGB,gl.RGB,gl.UNSIGNED_BYTE,sheet);gl.generateMipmap(gl.TEXTURE_2D);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);
@@ -678,7 +678,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   return {render,project,reset(){init=false}}
 }
 </script><script>(() => {
-  const $=id=>document.getElementById(id),world=$('world'),key='palm-county-save-1',keys={};
+  const $=id=>document.getElementById(id),world=$('world'),key='unbound-save-1',keys={};
   let saved=null;try{saved=JSON.parse(localStorage.getItem(key))}catch{}
   const game=new PC.Game(saved);let renderer;
   try{renderer=createRenderer(world)}catch(e){$('error').hidden=false;$('error').textContent=e.message;return}

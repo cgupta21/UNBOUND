@@ -1,5 +1,5 @@
 (() => {
-  const $=id=>document.getElementById(id),world=$('world'),key='palm-county-save-1',keys={};
+  const $=id=>document.getElementById(id),world=$('world'),key='unbound-save-1',keys={};
   let saved=null;try{saved=JSON.parse(localStorage.getItem(key))}catch{}
   const game=new PC.Game(saved);let renderer;
   try{renderer=createRenderer(world)}catch(e){$('error').hidden=false;$('error').textContent=e.message;return}

@@ -6,4 +6,5 @@ let page = read('page.html');
 for (const [token, file] of Object.entries({ STYLES: 'style.css', WORLD: 'world.js', RENDER: 'render.js', APP: 'app.js' })) {
   page = page.replace('/*' + token + '*/', () => read(file));
 }
-for (const file of ['UNBOUND.html','Palm County.html']) fs.writeFileSync(path.join(root,file),page);
+fs.mkdirSync(path.join(root,'docs'),{recursive:true});
+for (const file of ['UNBOUND.html','docs/index.html']) fs.writeFileSync(path.join(root,file),page);
