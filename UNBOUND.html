@@ -30,11 +30,15 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
 .maptools{display:flex;align-items:center;gap:6px;margin-top:8px}
 .maptools button{min-width:44px;min-height:44px;padding:5px 12px}
 
+
+#speedBox strong{font:300 clamp(48px,6.6vw,88px)/.92 "Segoe UI",sans-serif;letter-spacing:-.075em;font-variant-numeric:tabular-nums}
+#speedBox{border-bottom:1px solid #fff6;padding-bottom:6px}
+
 </style></head>
 <body><canvas id="world" aria-label="3D UNBOUND game world"></canvas><div id="shade"></div>
 <svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs><symbol id="sun" viewBox="0 0 60 42"><path d="M6 23a24 24 0 0 1 48 0Z M5 26h50v3H5z M9 32h42v3H9z M16 38h28v2H16z" fill="currentColor"/></symbol></defs></svg>
 <header><div class="brand"><svg><use href="#sun"/></svg><span>UNBOUND</span></div><div class="topbuttons"><button id="sound" aria-label="Toggle vehicle audio" title="Toggle audio"><span class="soundbars"><i></i><i></i><i></i><i></i></span><span id="soundText">Audio ready</span></button><button class="playing" data-cmd="car">Walk / ride</button><button class="playing" data-cmd="pause" aria-label="Pause game">Ⅱ</button></div></header>
-<main id="titleScreen"><div class="hero"><div class="eyebrow"><b></b> A COASTAL OPEN WORLD</div><h1 class="unbound">UNBOUND</h1><p>No Rules. No Limits. Your World.</p><div class="heroactions"><button class="major" id="walkStart">Start on foot</button><button class="ghost" id="begin">Start driving <span>▶</span></button><button class="ghost" id="hotelStart">Visit Palma Hotel</button><button id="helpTitle" class="ghost">Controls</button></div></div><div class="location"><i></i><div><small>ON LOCATION</small><strong id="titlePlace">Ocean Drive</strong></div></div></main>
+<main id="titleScreen"><div class="hero"><div class="eyebrow"><b></b> A COASTAL OPEN WORLD</div><h1 class="unbound">UNBOUND</h1><p>No Rules. No Limits. Your World.</p><div class="heroactions"><button class="major" id="skylineStart">Sunset drive</button><button class="ghost" id="walkStart">Start on foot</button><button class="ghost" id="begin">Start driving <span>▶</span></button><button class="ghost" id="hotelStart">Visit Palma Hotel</button><button id="helpTitle" class="ghost">Controls</button></div></div><div class="location"><i></i><div><small>ON LOCATION</small><strong id="titlePlace">Ocean Drive</strong></div></div></main>
 <section id="hud" class="playing" aria-label="Game dashboard"><div id="status"><span id="district"></span><span id="time"></span><span id="money"></span><span id="alertState" hidden></span></div><button id="jobCard" data-cmd="jobs"><span class="eyebrow" id="jobType">JOB BOARD</span><strong id="jobTitle">Available jobs</strong><small id="jobHint"></small></button><div id="pin"></div>
 <div id="mapDock"><button id="miniButton" data-cmd="map" aria-label="Open city map"><canvas id="mini" width="244" height="166"></canvas><span>M</span></button><div id="roadName">OCEAN DRIVE</div></div>
 <div id="speedBox"><strong id="speed">000</strong><div><small id="unit">KM/H</small><span id="gear">P</span></div></div>
@@ -49,7 +53,10 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
   function seed(s){return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
   const rand=seed(731), solids=[], buildings=[], lots=[], props=[];
   const paints=['#ef8d78','#89b8ad','#dfb5a0','#f5ca9a','#aba2b9','#e1cfc0','#89aeb7'];
-  function block(x,z,w,d,h,paint,type,sign=''){const b={x,z,w,d,h,paint,type,sign,seed:Math.floor(rand()*65535)};buildings.push(b);solids.push(b);return b}
+  function block(x,z,w,d,h,paint,type,sign=''){const b={x,z,w,d,h,paint,type,sign,seed:Math.floor(rand()*65535)};if(type!=='store' && ((x>55&&x<245)||sign==='PALMA'||sign==='OCEAN CLUB')){
+      b.podium=h;b.h=h+14+b.seed%29;
+    }
+    buildings.push(b);solids.push(b);return b}
   const names=['PALMA','SUNDIAL','AZURE','MIRAGE','OCEAN CLUB','BAY RECORDS','PARADISO','LIDO','RIVIERA','NOVA'];
   for(let i=0;i<xs.length-1;i++)for(let j=0;j<5;j++){
     const x=xs[i]+34,z=zs[j]+34,park=(i===1&&j===2)||(i===2&&j===4);
@@ -526,6 +533,18 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
       c*=mix(vec3(.27,.32,.51),vec3(1.),light);
       if(material>4.5&&material<5.5)c=mix(c,vec3(.99,.72,.40),.79*(1.-light));
       if(material>1.5&&material<2.5)c=mix(c,color*1.2,.80);
+      if(material>6.5&&material<7.5){
+        vec2 pane=fract(tex),cell=floor(tex);
+        float edge=min(min(pane.x-.12,.88-pane.x),min(pane.y-.15,.82-pane.y));
+        float interior=smoothstep(-.016,.016,edge);
+        float room=fract(sin(mod(dot(cell,vec2(3.17,7.31)),6.283))*459.31);
+        vec3 glass=mix(vec3(.07,.13,.18),vec3(.31,.43,.49),pane.y*.65+room*.35);
+        vec3 lamp=mix(vec3(.64,.93,.97),vec3(1.,.79,.53),step(.77,room));
+        float lit=smoothstep(.56,.62,room);
+        glass=mix(glass,lamp*(.8+.2*pane.y),lit);
+        c=mix(c,glass,interior);
+        c+=lamp*lit*.12*exp(-abs(edge)*13.);
+      }
       vec3 haze=mix(vec3(.22,.23,.34),vec3(.94,.68,.61),light);c=mix(c,haze,(1.-exp(-max(depth-12.,0.)*.0033))*.92);gl_FragColor=vec4(c,1.);}`);
   const uniforms=(p,attrs,unifs)=>Object.fromEntries([...attrs.map(k=>[k,gl.getAttribLocation(p,k)]),...unifs.map(k=>[k,gl.getUniformLocation(p,k)])]);
   const su=uniforms(sky,['a'],['rightV','upV','forwardV','lens','light','tm']),mu=uniforms(mesh,['pos','col','uv','mat'],['eye','rightV','upV','forwardV','lens','offset','rot','light','walk','tm','atlas']);
@@ -566,7 +585,24 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
         g.quad([start[0]-dz*.07,start[1],start[2]+dx*.07],[start[0]+dz*.07,start[1],start[2]-dx*.07],[end[0]+dz*.04,end[1],end[2]-dx*.04],[end[0]-dz*.04,end[1],end[2]+dx*.04],tint(color,1.12))}}
   }
   function building(g,b){
-    const {x,z,w,d,h,paint,sign}=b,l=x-w/2,f=z+d/2,r=seed(b.seed);
+    const {x,z,w,d,paint,sign}=b,h=b.podium||b.h,l=x-w/2,f=z+d/2,r=seed(b.seed);
+    if(b.podium){
+      const base=b.podium+1.15,tw=w*.9,td=d*.88,height=b.h-base;
+      const stone=['#858999','#97939f','#718b96','#ac9c9e'][b.seed%4];
+      // Each wall carries a floor-and-bay grid, including the faces seen driving south.
+      const corners=[[x-tw/2,z+td/2],[x+tw/2,z+td/2],[x+tw/2,z-td/2],[x-tw/2,z-td/2]];
+      for(let side=0;side<4;side++){
+        const [ax,az]=corners[side],[bx,bz]=corners[(side+1)%4];
+        const A=[ax,base,az],B=[bx,base,bz],C=[bx,b.h,bz],D=[ax,b.h,az];
+        const bays=Math.max(3,Math.round(Math.hypot(bx-ax,bz-az)/2.55)),floors=Math.max(3,Math.round(height/2.9));
+        const u=b.seed%17+side*7,col=tint(stone,[1,.77,.82,1.08][side]);
+        g.tri(A,B,C,col,7,[[u,0],[u+bays,0],[u+bays,floors]]);
+        g.tri(A,C,D,col,7,[[u,0],[u+bays,floors],[u,floors]]);
+      }
+      g.box(x,b.h,z,tw+.3,.32,td+.3,'#d1bdba');
+      g.box(x,b.h+.32,z,tw*.54,1.7,td*.57,stone);
+      g.box(x,b.h+.08,z,tw+.35,.12,td+.35,b.seed%2?'#a7e8dc':'#ffaba1',2);
+    }
     g.box(x,.21,z,w,h,d,paint);g.box(x,h-.16,z,w+.32,.16,d+.32,b.seed%2?'#ff74b9':'#55e4d8',2);g.box(x,2.78,z,w+.26,.11,d+.27,'#ff94b9',2);g.box(x,h+.21,z,w+.75,.48,d+.75,'#f3dcc7');
     g.box(x,h+.7,z,w*.79,.42,d*.8,tint(paint,.92));g.box(x+1,h+1.1,z-1,w*.40,1.45,d*.38,paint);
     g.box(x+2,h+2.55,z-1,w*.43,.18,d*.4,'#e6cfc0');g.box(x-3,h+.7,z+3,2.5,.9,1.6,'#b1a699');
@@ -591,9 +627,9 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   base.ground(196,-34,465,382,'#bbad99',-.08);base.ground(-612,-52,1140,1440,'#4b999b',-.16,3);
   base.ground(-31,-34,23,385,'#e6c393',-.04);base.ground(-17,-34,8,382,'#d8ac91',.12);base.ground(-10.8,-34,5.6,382,'#e0c9b0',.13);
   for(let z=-224;z<155;z+=4)base.ground(-42+Math.sin(z*.09)*.7,z,2.4,4.2,'#a9c9b6',-.09);
-  for(const x of xs){base.ground(x,-34,16,365,'#696673',.005,4);base.ground(x-7.72,-34,.16,365,'#e8c5a1',.02);base.ground(x+7.72,-34,.16,365,'#e8c5a1',.02)}
-  for(const z of zs)base.ground(204,z,424,16,'#696673',.012,4);
-  for(const x of xs)for(let z=-214;z<148;z+=6){if(zs.every(s=>Math.abs(s-z)>10)){base.ground(x-.19,z,.1,3.7,'#f0c68a',.045);base.ground(x+.19,z,.1,3.7,'#f0c68a',.045)}}
+  for(const x of xs){base.ground(x,-34,16,365,'#424653',.005,4);base.ground(x-7.72,-34,.16,365,'#e8c5a1',.02);base.ground(x+7.72,-34,.16,365,'#e8c5a1',.02)}
+  for(const z of zs)base.ground(204,z,424,16,'#424653',.012,4);
+  for(const x of xs)for(let z=-214;z<148;z+=6){if(zs.every(s=>Math.abs(s-z)>10)){base.ground(x-.19,z,.12,6.01,'#f0c68a',.045);for(const lane of [-4,4])base.ground(x+lane,z,.14,2.8,'#e0d9cc',.046);base.ground(x+.19,z,.12,6.01,'#f0c68a',.045)}}
   for(const z of zs)for(let x=-6;x<417;x+=6)if(xs.every(s=>Math.abs(s-x)>10))base.ground(x,z,3.6,.19,'#edc487',.045);
   for(const x of xs)for(const z of zs){for(const f of [-1,1])for(let k=-6;k<=6;k+=2){base.ground(x+k,z+f*9.05,.65,2.0,'#d3c8b9',.055);base.ground(x+f*9.05,z+k,2,.65,'#d3c8b9',.055)}}
   const lights=[];for(const x of xs)for(const z of zs)for(const f of [-1,1]){
@@ -683,7 +719,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     let e,t;if(intro){const car=game.cars[0],sx=car.x,sz=car.z;const k=Math.sin(performance.now()*.000085)*.65;e=[sx-5.3+k,2.12,sz+6.9];t=[sx+.6,2.16,sz-8.6];if(aspect<.85){e=[sx-4.3,2.3,sz+8.9];t=[sx,2.12,sz-5.4]}lens=.49}
     else if(v?.heli){const yaw=followH;e=[p.x-Math.sin(yaw)*13,v.alt+6.5,p.z+Math.cos(yaw)*13];t=[p.x+Math.sin(yaw)*3,v.alt+1.15,p.z-Math.cos(yaw)*3];lens=.58}
     else if(game.room){const q=game.inside;e=[q.x*.82,5.7,q.z*.36+7.3];t=[q.x*.82,1.12,q.z*.36-1.6];lens=.61}
-    else{const yaw=followH,back=v?8.9:5.9,side=v?0:.58,cx=Math.cos(yaw),sz=Math.sin(yaw);e=[p.x-sz*back+cx*side,v?4.05:3.05,p.z+cx*back+sz*side];t=[p.x+sz*4+cx*side,v?1.4:1.38,p.z-cx*4+sz*side];lens=v?.54:.51;
+    else{const yaw=followH,back=v?11.8:5.9,side=v?0:.58,cx=Math.cos(yaw),sz=Math.sin(yaw);e=[p.x-sz*back+cx*side,v?3.85:3.05,p.z+cx*back+sz*side];t=[p.x+sz*4+cx*side,v?1.9:1.38,p.z-cx*4+sz*side];lens=v?.52+Math.min(.055,Math.abs(v.speed)*.002):.51;
       // Pull the chase camera forward when its ray would pass through a building.
       for(let i=1;i<=14;i++){const f=i/14,x=p.x+(e[0]-p.x)*f,z=p.z+(e[2]-p.z)*f;if(PC.buildings.some(b=>Math.abs(x-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3)){const q=Math.max(.09,(i-1)/14);e=[p.x+(e[0]-p.x)*q,e[1],p.z+(e[2]-p.z)*q];break}}
     }
@@ -740,6 +776,12 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   stick.onlostpointercapture=stick.onpointerup=stick.onpointercancel=e=>{if(e.pointerId===stickPointer)centerStick()};
   function clearKeys(){endDrag();centerStick();held.clear();for(const input of [keys,touchInput])for(const key of Object.keys(input))delete input[key]}
   function start(){if(!audioCtx)sound();mode='play';document.body.classList.add('live');look=game.player.h;renderer.reset();last=performance.now();game.notify(saved?.v===1?'Welcome back to UNBOUND':'Welcome to Ocean Drive',matchMedia('(any-pointer:coarse)').matches?'Tap Jobs to find work.':'WASD to move · Move mouse left or right to steer · F to board or exit');updateHud();save()}
+  $('skylineStart').onclick=()=>{
+    const car=game.cars[0];game.inside=null;game.clock=18.55;
+    Object.assign(car,{x:139.25,z:49,h:0,speed:0,steer:0});
+    Object.assign(game.player,{x:car.x,z:car.z,h:0,car:car.id});
+    start();game.notify('Sunset drive','Skyline Heights');
+  };
   $('hotelStart').onclick=()=>{game.inside=null;const r=PC.rooms[0];Object.assign(game.player,{car:null,x:r.x-2,z:r.z,h:Math.PI/2});start();game.notify('Palma Hotel','Walk toward the pink doorway and press E to enter.')};
   $('begin').onclick=start;$('walkStart').onclick=()=>{if(!saved||game.vehicle&&!game.toggleCar()){if(game.vehicle)game.vehicle.speed=0;Object.assign(game.player,{car:null,x:-38,z:48,h:0})}start();game.notify('On foot',matchMedia('(any-pointer:coarse)').matches?'Drag to walk. Tap Board beside a vehicle.':'WASD or arrows to walk · Shift to sprint · Enter to ride')};
   let audioCtx,master,engine,engineGain,audioOn=false,nextNote=0,note=0;

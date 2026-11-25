@@ -41,6 +41,18 @@ function createRenderer(canvas){
       c*=mix(vec3(.27,.32,.51),vec3(1.),light);
       if(material>4.5&&material<5.5)c=mix(c,vec3(.99,.72,.40),.79*(1.-light));
       if(material>1.5&&material<2.5)c=mix(c,color*1.2,.80);
+      if(material>6.5&&material<7.5){
+        vec2 pane=fract(tex),cell=floor(tex);
+        float edge=min(min(pane.x-.12,.88-pane.x),min(pane.y-.15,.82-pane.y));
+        float interior=smoothstep(-.016,.016,edge);
+        float room=fract(sin(mod(dot(cell,vec2(3.17,7.31)),6.283))*459.31);
+        vec3 glass=mix(vec3(.07,.13,.18),vec3(.31,.43,.49),pane.y*.65+room*.35);
+        vec3 lamp=mix(vec3(.64,.93,.97),vec3(1.,.79,.53),step(.77,room));
+        float lit=smoothstep(.56,.62,room);
+        glass=mix(glass,lamp*(.8+.2*pane.y),lit);
+        c=mix(c,glass,interior);
+        c+=lamp*lit*.12*exp(-abs(edge)*13.);
+      }
       vec3 haze=mix(vec3(.22,.23,.34),vec3(.94,.68,.61),light);c=mix(c,haze,(1.-exp(-max(depth-12.,0.)*.0033))*.92);gl_FragColor=vec4(c,1.);}`);
   const uniforms=(p,attrs,unifs)=>Object.fromEntries([...attrs.map(k=>[k,gl.getAttribLocation(p,k)]),...unifs.map(k=>[k,gl.getUniformLocation(p,k)])]);
   const su=uniforms(sky,['a'],['rightV','upV','forwardV','lens','light','tm']),mu=uniforms(mesh,['pos','col','uv','mat'],['eye','rightV','upV','forwardV','lens','offset','rot','light','walk','tm','atlas']);
@@ -81,7 +93,24 @@ function createRenderer(canvas){
         g.quad([start[0]-dz*.07,start[1],start[2]+dx*.07],[start[0]+dz*.07,start[1],start[2]-dx*.07],[end[0]+dz*.04,end[1],end[2]-dx*.04],[end[0]-dz*.04,end[1],end[2]+dx*.04],tint(color,1.12))}}
   }
   function building(g,b){
-    const {x,z,w,d,h,paint,sign}=b,l=x-w/2,f=z+d/2,r=seed(b.seed);
+    const {x,z,w,d,paint,sign}=b,h=b.podium||b.h,l=x-w/2,f=z+d/2,r=seed(b.seed);
+    if(b.podium){
+      const base=b.podium+1.15,tw=w*.9,td=d*.88,height=b.h-base;
+      const stone=['#858999','#97939f','#718b96','#ac9c9e'][b.seed%4];
+      // Each wall carries a floor-and-bay grid, including the faces seen driving south.
+      const corners=[[x-tw/2,z+td/2],[x+tw/2,z+td/2],[x+tw/2,z-td/2],[x-tw/2,z-td/2]];
+      for(let side=0;side<4;side++){
+        const [ax,az]=corners[side],[bx,bz]=corners[(side+1)%4];
+        const A=[ax,base,az],B=[bx,base,bz],C=[bx,b.h,bz],D=[ax,b.h,az];
+        const bays=Math.max(3,Math.round(Math.hypot(bx-ax,bz-az)/2.55)),floors=Math.max(3,Math.round(height/2.9));
+        const u=b.seed%17+side*7,col=tint(stone,[1,.77,.82,1.08][side]);
+        g.tri(A,B,C,col,7,[[u,0],[u+bays,0],[u+bays,floors]]);
+        g.tri(A,C,D,col,7,[[u,0],[u+bays,floors],[u,floors]]);
+      }
+      g.box(x,b.h,z,tw+.3,.32,td+.3,'#d1bdba');
+      g.box(x,b.h+.32,z,tw*.54,1.7,td*.57,stone);
+      g.box(x,b.h+.08,z,tw+.35,.12,td+.35,b.seed%2?'#a7e8dc':'#ffaba1',2);
+    }
     g.box(x,.21,z,w,h,d,paint);g.box(x,h-.16,z,w+.32,.16,d+.32,b.seed%2?'#ff74b9':'#55e4d8',2);g.box(x,2.78,z,w+.26,.11,d+.27,'#ff94b9',2);g.box(x,h+.21,z,w+.75,.48,d+.75,'#f3dcc7');
     g.box(x,h+.7,z,w*.79,.42,d*.8,tint(paint,.92));g.box(x+1,h+1.1,z-1,w*.40,1.45,d*.38,paint);
     g.box(x+2,h+2.55,z-1,w*.43,.18,d*.4,'#e6cfc0');g.box(x-3,h+.7,z+3,2.5,.9,1.6,'#b1a699');
@@ -106,9 +135,9 @@ function createRenderer(canvas){
   base.ground(196,-34,465,382,'#bbad99',-.08);base.ground(-612,-52,1140,1440,'#4b999b',-.16,3);
   base.ground(-31,-34,23,385,'#e6c393',-.04);base.ground(-17,-34,8,382,'#d8ac91',.12);base.ground(-10.8,-34,5.6,382,'#e0c9b0',.13);
   for(let z=-224;z<155;z+=4)base.ground(-42+Math.sin(z*.09)*.7,z,2.4,4.2,'#a9c9b6',-.09);
-  for(const x of xs){base.ground(x,-34,16,365,'#696673',.005,4);base.ground(x-7.72,-34,.16,365,'#e8c5a1',.02);base.ground(x+7.72,-34,.16,365,'#e8c5a1',.02)}
-  for(const z of zs)base.ground(204,z,424,16,'#696673',.012,4);
-  for(const x of xs)for(let z=-214;z<148;z+=6){if(zs.every(s=>Math.abs(s-z)>10)){base.ground(x-.19,z,.1,3.7,'#f0c68a',.045);base.ground(x+.19,z,.1,3.7,'#f0c68a',.045)}}
+  for(const x of xs){base.ground(x,-34,16,365,'#424653',.005,4);base.ground(x-7.72,-34,.16,365,'#e8c5a1',.02);base.ground(x+7.72,-34,.16,365,'#e8c5a1',.02)}
+  for(const z of zs)base.ground(204,z,424,16,'#424653',.012,4);
+  for(const x of xs)for(let z=-214;z<148;z+=6){if(zs.every(s=>Math.abs(s-z)>10)){base.ground(x-.19,z,.12,6.01,'#f0c68a',.045);for(const lane of [-4,4])base.ground(x+lane,z,.14,2.8,'#e0d9cc',.046);base.ground(x+.19,z,.12,6.01,'#f0c68a',.045)}}
   for(const z of zs)for(let x=-6;x<417;x+=6)if(xs.every(s=>Math.abs(s-x)>10))base.ground(x,z,3.6,.19,'#edc487',.045);
   for(const x of xs)for(const z of zs){for(const f of [-1,1])for(let k=-6;k<=6;k+=2){base.ground(x+k,z+f*9.05,.65,2.0,'#d3c8b9',.055);base.ground(x+f*9.05,z+k,2,.65,'#d3c8b9',.055)}}
   const lights=[];for(const x of xs)for(const z of zs)for(const f of [-1,1]){
@@ -198,7 +227,7 @@ function createRenderer(canvas){
     let e,t;if(intro){const car=game.cars[0],sx=car.x,sz=car.z;const k=Math.sin(performance.now()*.000085)*.65;e=[sx-5.3+k,2.12,sz+6.9];t=[sx+.6,2.16,sz-8.6];if(aspect<.85){e=[sx-4.3,2.3,sz+8.9];t=[sx,2.12,sz-5.4]}lens=.49}
     else if(v?.heli){const yaw=followH;e=[p.x-Math.sin(yaw)*13,v.alt+6.5,p.z+Math.cos(yaw)*13];t=[p.x+Math.sin(yaw)*3,v.alt+1.15,p.z-Math.cos(yaw)*3];lens=.58}
     else if(game.room){const q=game.inside;e=[q.x*.82,5.7,q.z*.36+7.3];t=[q.x*.82,1.12,q.z*.36-1.6];lens=.61}
-    else{const yaw=followH,back=v?8.9:5.9,side=v?0:.58,cx=Math.cos(yaw),sz=Math.sin(yaw);e=[p.x-sz*back+cx*side,v?4.05:3.05,p.z+cx*back+sz*side];t=[p.x+sz*4+cx*side,v?1.4:1.38,p.z-cx*4+sz*side];lens=v?.54:.51;
+    else{const yaw=followH,back=v?11.8:5.9,side=v?0:.58,cx=Math.cos(yaw),sz=Math.sin(yaw);e=[p.x-sz*back+cx*side,v?3.85:3.05,p.z+cx*back+sz*side];t=[p.x+sz*4+cx*side,v?1.9:1.38,p.z-cx*4+sz*side];lens=v?.52+Math.min(.055,Math.abs(v.speed)*.002):.51;
       // Pull the chase camera forward when its ray would pass through a building.
       for(let i=1;i<=14;i++){const f=i/14,x=p.x+(e[0]-p.x)*f,z=p.z+(e[2]-p.z)*f;if(PC.buildings.some(b=>Math.abs(x-b.x)<b.w/2+.3&&Math.abs(z-b.z)<b.d/2+.3)){const q=Math.max(.09,(i-1)/14);e=[p.x+(e[0]-p.x)*q,e[1],p.z+(e[2]-p.z)*q];break}}
     }

@@ -29,6 +29,12 @@
   stick.onlostpointercapture=stick.onpointerup=stick.onpointercancel=e=>{if(e.pointerId===stickPointer)centerStick()};
   function clearKeys(){endDrag();centerStick();held.clear();for(const input of [keys,touchInput])for(const key of Object.keys(input))delete input[key]}
   function start(){if(!audioCtx)sound();mode='play';document.body.classList.add('live');look=game.player.h;renderer.reset();last=performance.now();game.notify(saved?.v===1?'Welcome back to UNBOUND':'Welcome to Ocean Drive',matchMedia('(any-pointer:coarse)').matches?'Tap Jobs to find work.':'WASD to move · Move mouse left or right to steer · F to board or exit');updateHud();save()}
+  $('skylineStart').onclick=()=>{
+    const car=game.cars[0];game.inside=null;game.clock=18.55;
+    Object.assign(car,{x:139.25,z:49,h:0,speed:0,steer:0});
+    Object.assign(game.player,{x:car.x,z:car.z,h:0,car:car.id});
+    start();game.notify('Sunset drive','Skyline Heights');
+  };
   $('hotelStart').onclick=()=>{game.inside=null;const r=PC.rooms[0];Object.assign(game.player,{car:null,x:r.x-2,z:r.z,h:Math.PI/2});start();game.notify('Palma Hotel','Walk toward the pink doorway and press E to enter.')};
   $('begin').onclick=start;$('walkStart').onclick=()=>{if(!saved||game.vehicle&&!game.toggleCar()){if(game.vehicle)game.vehicle.speed=0;Object.assign(game.player,{car:null,x:-38,z:48,h:0})}start();game.notify('On foot',matchMedia('(any-pointer:coarse)').matches?'Drag to walk. Tap Board beside a vehicle.':'WASD or arrows to walk · Shift to sprint · Enter to ride')};
   let audioCtx,master,engine,engineGain,audioOn=false,nextNote=0,note=0;

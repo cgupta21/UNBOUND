@@ -29,3 +29,7 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
 .maptools{display:flex;align-items:center;gap:6px;margin-top:8px}
 .maptools button{min-width:44px;min-height:44px;padding:5px 12px}
 
+
+#speedBox strong{font:300 clamp(48px,6.6vw,88px)/.92 "Segoe UI",sans-serif;letter-spacing:-.075em;font-variant-numeric:tabular-nums}
+#speedBox{border-bottom:1px solid #fff6;padding-bottom:6px}
+
