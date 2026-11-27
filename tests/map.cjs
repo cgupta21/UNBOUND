@@ -21,6 +21,9 @@ const path=require('node:path');
   assert.notDeepEqual(await snapshot(),initial);
   await p.touchscreen.tap(x,y);const marked=await map.evaluate(c=>Array.from(c.getContext('2d').getImageData(c.width>>1,c.height>>1,1,1).data));
   assert.deepEqual(marked.slice(0,3),[255,159,133]);
+  await p.locator('#locatePlayer').tap();
+  const playerPixel=await map.evaluate(c=>Array.from(c.getContext('2d').getImageData(c.width>>1,c.height>>1,1,1).data));
+  assert.deepEqual(playerPixel.slice(0,3),[165,243,223]);
   await p.locator('[data-ui=clear]').click();await p.locator('#fitMap').click();assert.ok((await snapshot()).filter((v,i)=>Math.abs(v-initial[i])>3).length<3);
   console.log('Passed wheel zoom, mouse drag, fit city, pinch zoom, waypoint alignment and clearing.');
  }finally{await browser.close()}

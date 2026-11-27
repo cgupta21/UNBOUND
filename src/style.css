@@ -56,3 +56,4 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
   #notification{top:31%;max-width:46vw;pointer-events:none}
 }
 
+.maptools{flex-wrap:wrap}

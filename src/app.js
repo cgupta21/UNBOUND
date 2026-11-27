@@ -71,7 +71,7 @@
       else body.innerHTML=PC.contracts.map(c=>'<article class="job"><div><small>'+c.type.toUpperCase()+' · $'+c.fee+(game.done.includes(c.id)?' · COMPLETED':'')+'</small><h3>'+c.name+'</h3><p>'+c.desc+'</p></div><button class="major" data-job="'+c.id+'">'+(game.done.includes(c.id)?'Replay':'Accept')+'</button></article>').join('');
       body.innerHTML+='<div class="sectionline">'+game.done.length+' / '+PC.contracts.length+' jobs completed &nbsp; · &nbsp; '+game.found.length+' / 5 lost film rolls recovered</div>'
     }
-    if(which==='map'){body.innerHTML='<canvas id="mapFull" width="800" height="760" aria-label="City map. Click or tap a location to place a waypoint."></canvas><div class="legend"><span><i>▲</i> You</span><span><b>◆</b> Objective</span><span><em>●</em> Waypoint</span><span>▰ Parked vehicle · Pink square: entrance</span></div><p class="panelnote">Drag to pan. Scroll or pinch to zoom. Tap to set a waypoint.</p><div class="maptools"><button class="ghost" id="zoomOut" aria-label="Zoom out">−</button><button class="ghost" id="fitMap">Fit city</button><button class="ghost" id="zoomIn" aria-label="Zoom in">+</button></div><div class="dialogactions"><button class="ghost" data-ui="clear">Clear waypoint</button><button class="major" data-ui="resume">Back to game</button></div>';openCityMap($('mapFull'))}
+    if(which==='map'){body.innerHTML='<canvas id="mapFull" width="800" height="760" aria-label="City map. Click or tap a location to place a waypoint."></canvas><div class="legend"><span><i>▲</i> You</span><span><b>◆</b> Objective</span><span><em>●</em> Waypoint</span><span>▰ Parked vehicle · Pink square: entrance</span></div><p class="panelnote">Drag to pan. Scroll or pinch to zoom. Tap to set a waypoint.</p><div class="maptools"><button class="ghost" id="zoomOut" aria-label="Zoom out">−</button><button class="ghost" id="fitMap">Fit city</button><button class="ghost" id="locatePlayer">Show me</button><button class="ghost" id="zoomIn" aria-label="Zoom in">+</button></div><div class="dialogactions"><button class="ghost" data-ui="clear">Clear waypoint</button><button class="major" data-ui="resume">Back to game</button></div>';openCityMap($('mapFull'))}
     if(which==='map'){const btn=document.createElement('button');btn.className='ghost';btn.dataset.ui='garageRoute';btn.textContent='Route to paint shop';body.querySelector('.dialogactions').append(btn)}
     panel.focus();updateHud()
   }
@@ -173,6 +173,10 @@
     for(const [id,factor] of [['zoomIn',1.5],['zoomOut',1/1.5]]){
       $(id).onclick=()=>{const r=map.getBoundingClientRect(),p={x:r.width/2,y:r.height/2};change(p,p,factor)};
     }
+    $('locatePlayer').onclick=()=>{
+      Object.assign(camera,{x:game.player.x,z:game.player.z,zoom:Math.max(3,camera.zoom)});
+      redraw();
+    };
     $('fitMap').onclick=()=>{Object.assign(camera,{x:145,z:-34,zoom:1});redraw()};
     const resize=new ResizeObserver(()=>{if(map.isConnected)redraw();else resize.disconnect()});
     resize.observe(map);redraw();

@@ -57,6 +57,7 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
   #notification{top:31%;max-width:46vw;pointer-events:none}
 }
 
+.maptools{flex-wrap:wrap}
 </style></head>
 <body><canvas id="world" aria-label="3D UNBOUND game world"></canvas><div id="shade"></div>
 <svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs><symbol id="sun" viewBox="0 0 60 42"><path d="M6 23a24 24 0 0 1 48 0Z M5 26h50v3H5z M9 32h42v3H9z M16 38h28v2H16z" fill="currentColor"/></symbol></defs></svg>
@@ -919,7 +920,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
       else body.innerHTML=PC.contracts.map(c=>'<article class="job"><div><small>'+c.type.toUpperCase()+' · $'+c.fee+(game.done.includes(c.id)?' · COMPLETED':'')+'</small><h3>'+c.name+'</h3><p>'+c.desc+'</p></div><button class="major" data-job="'+c.id+'">'+(game.done.includes(c.id)?'Replay':'Accept')+'</button></article>').join('');
       body.innerHTML+='<div class="sectionline">'+game.done.length+' / '+PC.contracts.length+' jobs completed &nbsp; · &nbsp; '+game.found.length+' / 5 lost film rolls recovered</div>'
     }
-    if(which==='map'){body.innerHTML='<canvas id="mapFull" width="800" height="760" aria-label="City map. Click or tap a location to place a waypoint."></canvas><div class="legend"><span><i>▲</i> You</span><span><b>◆</b> Objective</span><span><em>●</em> Waypoint</span><span>▰ Parked vehicle · Pink square: entrance</span></div><p class="panelnote">Drag to pan. Scroll or pinch to zoom. Tap to set a waypoint.</p><div class="maptools"><button class="ghost" id="zoomOut" aria-label="Zoom out">−</button><button class="ghost" id="fitMap">Fit city</button><button class="ghost" id="zoomIn" aria-label="Zoom in">+</button></div><div class="dialogactions"><button class="ghost" data-ui="clear">Clear waypoint</button><button class="major" data-ui="resume">Back to game</button></div>';openCityMap($('mapFull'))}
+    if(which==='map'){body.innerHTML='<canvas id="mapFull" width="800" height="760" aria-label="City map. Click or tap a location to place a waypoint."></canvas><div class="legend"><span><i>▲</i> You</span><span><b>◆</b> Objective</span><span><em>●</em> Waypoint</span><span>▰ Parked vehicle · Pink square: entrance</span></div><p class="panelnote">Drag to pan. Scroll or pinch to zoom. Tap to set a waypoint.</p><div class="maptools"><button class="ghost" id="zoomOut" aria-label="Zoom out">−</button><button class="ghost" id="fitMap">Fit city</button><button class="ghost" id="locatePlayer">Show me</button><button class="ghost" id="zoomIn" aria-label="Zoom in">+</button></div><div class="dialogactions"><button class="ghost" data-ui="clear">Clear waypoint</button><button class="major" data-ui="resume">Back to game</button></div>';openCityMap($('mapFull'))}
     if(which==='map'){const btn=document.createElement('button');btn.className='ghost';btn.dataset.ui='garageRoute';btn.textContent='Route to paint shop';body.querySelector('.dialogactions').append(btn)}
     panel.focus();updateHud()
   }
@@ -1021,6 +1022,10 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     for(const [id,factor] of [['zoomIn',1.5],['zoomOut',1/1.5]]){
       $(id).onclick=()=>{const r=map.getBoundingClientRect(),p={x:r.width/2,y:r.height/2};change(p,p,factor)};
     }
+    $('locatePlayer').onclick=()=>{
+      Object.assign(camera,{x:game.player.x,z:game.player.z,zoom:Math.max(3,camera.zoom)});
+      redraw();
+    };
     $('fitMap').onclick=()=>{Object.assign(camera,{x:145,z:-34,zoom:1});redraw()};
     const resize=new ResizeObserver(()=>{if(map.isConnected)redraw();else resize.disconnect()});
     resize.observe(map);redraw();
