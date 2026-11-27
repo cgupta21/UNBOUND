@@ -717,9 +717,14 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     for(const side of [-1,1])for(const zz of [-1.46,1.44]){const a=[side*(w-.17),.46,zz],b=[side*(w+.045),.46,zz];g.beam(a,b,.39,.39,'#30333d',12);g.beam(b,[side*(w+.053),.46,zz],.22,.22,'#c4bba9',10);g.beam([side*(w+.056),.46,zz],[side*(w+.068),.46,zz],.10,.10,'#616871',8)}
     return g.upload()
   }
-  function speedboat(color,police=false){const g=new Geo();const ring=[[-1.12,1.95],[1.12,1.95],[1.05,-.85],[.64,-2.2],[0,-2.85],[-.64,-2.2],[-1.05,-.85]];for(let i=0;i<ring.length;i++){const [x,z]=ring[i],[a,b]=ring[(i+1)%ring.length];g.quad([x*.65,-.12,z*.9],[a*.65,-.12,b*.9],[a,.58,b],[x,.58,z],color);g.tri([0,.58,0],[x,.58,z],[a,.58,b],'#f8dbbc')}if(police)for(const side of [-1,1]){g.box(side*1.09,.4,.55,.09,.13,2.35,'#f1e4cd');g.beam([side*.54,.6,0],[side*.49,1.43,0],.05,.05,'#292c33',6)}
+  function speedboat(color,police=false){const g=new Geo();const ring=[[-1.12,1.95],[1.12,1.95],[1.05,-.85],[.64,-2.2],[0,-2.85],[-.64,-2.2],[-1.05,-.85]];for(let i=0;i<ring.length;i++){const [x,z]=ring[i],[a,b]=ring[(i+1)%ring.length];g.quad([x*.65,-.12,z*.9],[a*.65,-.12,b*.9],[a,.58,b],[x,.58,z],color);g.tri([0,.58,0],[x,.58,z],[a,.58,b],police?'#4c5056':'#f8dbbc')}if(police){g.box(0,1.43,0,1.24,.08,.85,'#292d33');g.box(0,.87,-.39,1.02,.53,.055,'#4c6371',9)}if(police)for(const side of [-1,1]){g.box(side*1.09,.4,.55,.09,.13,2.35,'#f1e4cd');g.beam([side*.54,.6,0],[side*.49,1.43,0],.05,.05,'#292c33',6)}
     g.box(0,.60,.28,1.64,.14,1.7,'#67586e');g.box(0,.75,.7,1.35,.3,.36,'#eec0aa');g.box(0,.73,-.5,1.35,.41,.12,'#7dadba');g.box(0,.18,2.04,.54,.64,.43,'#454a5a');return g.upload()}
-  function helicopter(){const g=new Geo();g.box(0,.45,0,1.65,1.25,2.6,'#24282f');g.box(0,.58,-1.32,1.45,.87,.75,'#465862');g.box(0,1.48,-.55,1.7,.21,2.4,'#343940');g.beam([0,.97,.9],[0,1.34,4.6],.48,.16,'#31353d',8);g.box(0,1.35,4.34,.13,.82,.59,'#e1c7ab');g.box(0,1.29,3.55,1.85,.12,.45,'#657993');g.box(0,1.7,0,.19,.55,.19,'#425064');for(const k of [-1,1]){g.box(k*.78,.03,0,.13,.12,2.8,'#485064');for(const z of [-.82,.81])g.beam([k*.76,.12,z],[k*.58,.55,z],.06,.06,'#556477');g.box(k*.84,.82,.1,.04,.18,1.95,'#f0dfc5')}return g.upload()}
+  function helicopter(){const g=new Geo();g.box(0,.45,0,1.65,1.25,2.6,'#24282f');for(const side of [-1,1]){
+      const nose=[0,.59,-2.09],chin=[side*.65,.61,-1.78],rim=[side*.81,1.02,-1.54],roof=[side*.66,1.56,-1.12],mid=[0,1.56,-1.18];
+      g.tri(nose,chin,rim,'#282e35');g.quad(nose,rim,roof,mid,'#405667',9);
+      g.beam(nose,mid,.026,.026,'#20252a',5);
+      g.quad([side*.833,1.03,-1.27],[side*.833,1.03,-.22],[side*.833,1.50,-.18],[side*.833,1.50,-1.18],'#465969',9);
+    }g.box(0,1.48,-.55,1.7,.21,2.4,'#343940');g.beam([0,.97,.9],[0,1.34,4.6],.48,.16,'#31353d',8);g.box(0,1.35,4.34,.13,.82,.59,'#e1c7ab');g.box(0,1.29,3.55,1.85,.12,.45,'#657993');g.box(0,1.7,0,.19,.55,.19,'#425064');for(const k of [-1,1]){g.box(k*.78,.03,0,.13,.12,2.8,'#485064');for(const z of [-.82,.81])g.beam([k*.76,.12,z],[k*.58,.55,z],.06,.06,'#556477');g.box(k*.84,.82,.1,.04,.18,1.95,'#f0dfc5')}return g.upload()}
   function blades(){const g=new Geo();g.box(0,0,0,7.6,.06,.18,'#414651');g.box(0,0,0,.18,.06,7.6,'#414651');return g.upload()}
   function motorcycle(color){const g=new Geo();for(const z of [-.84,.83]){g.beam([-.135,.4,z],[.135,.4,z],.37,.37,'#343641',16);g.beam([-.15,.4,z],[.15,.4,z],.21,.21,'#b1aaa0',12)}
     g.box(0,.52,0,.46,.44,.72,'#464c53');g.box(0,.91,-.25,.54,.27,.57,color);g.box(0,.94,.38,.42,.16,.65,'#403d43');for(const s of [-1,1]){g.beam([s*.14,.4,-.84],[s*.17,1.25,-.48],.05,.055,'#d2c3ab');g.beam([s*.13,.42,.83],[s*.13,.7,-.12],.07,.07,color)}g.box(0,1.19,-.53,.78,.07,.10,'#545459');g.box(0,1.02,-.65,.26,.19,.12,'#ffd994',2);g.box(0,.89,.83,.28,.09,.12,'#fd6554',2);return g.upload()}
@@ -762,6 +767,10 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
   function drawBar(x,y,z,h,phase){draw(cached('fleetBar'+phase,()=>emergencyBar(phase)),x,y,z,h)}
   function patrolLivery(){const g=new Geo();
     for(const side of [-1,1]){
+      for(const axle of [-1.46,1.44])for(let i=0;i<8;i++){
+        const a=i*ta/8,xx=side*1.10;
+        g.beam([xx,.46,axle],[xx,.46+.235*Math.cos(a),axle+.235*Math.sin(a)],.018,.014,'#e1ded5',4);
+      }
       g.box(side*1.044,.62,.08,.06,.17,2.15,'#f0dfc5');
       g.box(side*.81,.97,1.84,.1,.18,.14,'#25272d');
     }
@@ -803,7 +812,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     for(const c of [...game.traffic,...game.cars])if(visible(c.x,c.z,6,148)){if(c.heli){draw(cached('helicopter',helicopter),c.x,c.alt+.17,c.z,c.h);drawBar(c.x,c.alt+1.94,c.z,c.h,0);draw(cached('blades',blades),c.x,c.alt+2.42,c.z,c===v?game.time*25:c.h);continue}if(c.policeBoat)continue;gl.uniform1f(mu.lensPower,!c.lightsOff&&(c===v||c.a||c.cruiser)?1:0);if(c.patrol||c.cruiser)draw(cached('blackInterceptor',()=>carModel('#24272d',1)),c.x,.08,c.z,c.h);else draw(cached((c.boat?'s':c.bike?'b':'c')+c.color+c.style,()=>c.boat?speedboat(c.color):c.bike?motorcycle(c.color):carModel(c.color,c.style)),c.x,.08,c.z,c.h);if((c.bike||c.boat)&&(c===v||c.bike&&c.a))draw(cached('rider',rider),c.x,.08,c.z,c.h)}
     for(const c of game.cars)if(c.cruiser&&visible(c.x,c.z,4,148)){draw(cached('interceptorTrim',patrolLivery),c.x,.08,c.z,c.h);drawBar(c.x,1.77,c.z,c.h,0)}
     const air=game.air;if(air&&visible(air.x,air.z,20,200)){draw(cached('helicopter',helicopter),air.x,air.alt,air.z,air.h);drawBar(air.x,air.alt+1.77,air.z,air.h,1+Math.floor(game.time*5)%2);draw(cached('blades',blades),air.x,air.alt+2.25,air.z,game.time*25)}
-    for(const boat of [...game.marine,...(game.harborBoat?[game.harborBoat]:[]),...game.cars.filter(c=>c.policeBoat)])if(visible(boat.x,boat.z,4,160)){draw(cached('marineHull',()=>speedboat('#252a32',true)),boat.x,.10,boat.z,boat.h);drawBar(boat.x,1.53,boat.z,boat.h,game.marine.includes(boat)?1+Math.floor(game.time*5)%2:0)}
+    for(const boat of [...game.marine,...(game.harborBoat?[game.harborBoat]:[]),...game.cars.filter(c=>c.policeBoat)])if(visible(boat.x,boat.z,4,160)){draw(cached('marineHull',()=>speedboat('#252a32',true)),boat.x,.10,boat.z,boat.h);drawBar(boat.x,1.61,boat.z,boat.h,game.marine.includes(boat)?1+Math.floor(game.time*5)%2:0)}
     const unit=game.officer;if(unit&&visible(unit.x,unit.z,3,140))draw(cached('officer',()=>personModel('#334f76','#a87961',1)),unit.x,.2,unit.z,unit.h,unit.walk);
     for(const cop of game.patrols)if(visible(cop.x,cop.z,4,148)){const flash=game.alert?1+Math.floor(game.time*5+cop.id)%2:0;draw(cached('interceptorTrim',patrolLivery),cop.x,.08,cop.z,cop.h);drawBar(cop.x,1.77,cop.z,cop.h,flash)}
     for(const l of lights)if(visible(l.x,l.z,3,100)){const phase=PC.signal(l.ix,l.iz,game.time),ns=phase>=.4&&phase<7.4?2:phase>=7.4&&phase<8?1:0,ew=phase>=8.4&&phase<15.4?2:phase>=15.4?1:0;draw(cached('l'+ns+ew,()=>signalMesh(ns,ew)),l.x,0,l.z,l.f<0?pi:0)}
