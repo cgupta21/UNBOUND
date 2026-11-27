@@ -40,6 +40,23 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
 @media(any-pointer:coarse) and (max-width:540px) and (orientation:portrait){
   #context,.flying #context{bottom:calc(246px + env(safe-area-inset-bottom));width:max-content;max-width:88vw}
 }
+
+@media(any-pointer:coarse) and (max-width:540px) and (orientation:portrait){
+  #status{right:13px;flex-wrap:wrap;gap:4px 8px}
+  #status #alertState{flex-basis:100%;border:0;padding:0}
+  #jobCard{top:119px}
+}
+@media(any-pointer:coarse) and (max-height:480px) and (orientation:landscape){
+  #status{left:max(12px,env(safe-area-inset-left));top:49px;font-size:11px;gap:5px;padding:5px}
+  #jobCard{right:max(12px,env(safe-area-inset-right));width:124px;top:52px;padding:6px 8px}
+  #jobCard #jobHint,#jobType{display:none}
+  #jobCard strong{font-size:13px}
+  #mapDock{width:82px;left:max(12px,env(safe-area-inset-left))}
+  #roadName{font-size:8px;padding:3px}
+  #speedBox strong{font-size:35px}
+  #notification{top:31%;max-width:46vw;pointer-events:none}
+}
+
 </style></head>
 <body><canvas id="world" aria-label="3D UNBOUND game world"></canvas><div id="shade"></div>
 <svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs><symbol id="sun" viewBox="0 0 60 42"><path d="M6 23a24 24 0 0 1 48 0Z M5 26h50v3H5z M9 32h42v3H9z M16 38h28v2H16z" fill="currentColor"/></symbol></defs></svg>
