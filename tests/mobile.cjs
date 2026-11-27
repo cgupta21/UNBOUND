@@ -47,6 +47,7 @@ async function main(){
       const lights=p.locator('#touchLights');
       if(scenario==='car'||scenario==='bike'){
         await lights.tap();assert.equal(await lights.getAttribute('aria-pressed'),'false');
+        const saved=await state();assert.equal(saved.cars[saved.player.car].lightsOff,true);
         await lights.tap();assert.equal(await lights.getAttribute('aria-pressed'),'true');
       }else assert.ok(await lights.isHidden());
       const boarded=await state();assert.notEqual(boarded.player.car,null,scenario);

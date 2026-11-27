@@ -129,7 +129,7 @@ async function main(){
       await pg.close();console.log('Player vehicle browser check passed:',scenario)
     }
     const m=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
-    m.on('pageerror',e=>errors.push(e.message));await m.goto(url);await m.locator('#begin').tap();await m.locator('.topbuttons [data-cmd="car"]').tap();
+    m.on('pageerror',e=>errors.push(e.message));await m.goto(url);await m.locator('#begin').tap();await m.locator('#touch [data-cmd="car"]').tap();
     await m.waitForFunction(()=>document.querySelector('#unit').textContent==='ON FOOT');await m.locator('#miniButton').tap();assert.equal(await m.locator('#panelTitle').innerText(),'City map');await m.locator('#closePanel').tap();
     assert.deepEqual(errors,[]);console.log('Touch layout, vehicle exit and city map passed');
   }finally{await browser.close()}

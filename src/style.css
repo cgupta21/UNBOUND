@@ -35,3 +35,7 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
 
 
 #touchLights[aria-pressed="true"]{color:#ffdf9a;border-color:#ffdf9a}
+
+@media(any-pointer:coarse) and (max-width:540px) and (orientation:portrait){
+  #context,.flying #context{bottom:calc(246px + env(safe-area-inset-bottom));width:max-content;max-width:88vw}
+}

@@ -418,16 +418,16 @@ const PC = (() => {
       this.patrolTick(dt);
       if(this.job?.remaining!=null){this.job.remaining-=dt;if(this.job.remaining<=0){this.endJob();this.notify('Time expired','Try the coastline time trial again from Jobs.')}else if(this.vehicle&&this.objective()?.mode==='gate')this.advance()}
     }
-    save(){return {v:1,inside:this.inside?{...this.inside}:null,money:this.money,done:this.done,found:this.found,clock:this.clock,player:{...this.player},cars:this.cars.map(({x,z,h,color,style,bike,cruiser,acquired,heli,alt,boat,policeBoat,fromHarbor})=>({x,z,h,color,style,bike,cruiser,acquired,heli,alt,boat,policeBoat,fromHarbor})),job:this.job?{...this.job}:null,busted:this.busted||null,pursuit:this.alert?{unseen:this.alert.unseen,origin:this.alert.origin,air:this.air,marine:this.marine.map(m=>({...m}))}:null,alert:this.alert?.level||0}}
+    save(){return {v:1,inside:this.inside?{...this.inside}:null,money:this.money,done:this.done,found:this.found,clock:this.clock,player:{...this.player},cars:this.cars.map(({x,z,h,color,style,bike,cruiser,acquired,heli,alt,boat,policeBoat,fromHarbor,lightsOff})=>({x,z,h,color,style,bike,cruiser,acquired,heli,alt,boat,policeBoat,fromHarbor,lightsOff})),job:this.job?{...this.job}:null,busted:this.busted||null,pursuit:this.alert?{unseen:this.alert.unseen,origin:this.alert.origin,air:this.air,marine:this.marine.map(m=>({...m}))}:null,alert:this.alert?.level||0}}
     restore(s){if(s.v!==1)return;this.money=Number.isFinite(s.money)?Math.max(0,s.money):0;this.done=Array.isArray(s.done)?[...new Set(s.done.filter(id=>contracts.some(c=>c.id===id)))]:[];this.found=Array.isArray(s.found)?[...new Set(s.found.filter(i=>Number.isInteger(i)&&film[i]))]:[];if(Number.isFinite(s.clock))this.clock=s.clock%24;
       const valid=(p,r)=>p&&Number.isFinite(p.x)&&Number.isFinite(p.z)&&Number.isFinite(p.h)&&allowed(p,r);
-      this.cars.forEach((c,i)=>{const p=s.cars?.[i];if(c.boat?sea(p)&&Number.isFinite(p.h):valid(p,1.4))Object.assign(c,{x:p.x,z:p.z,h:p.h,color:carColors.includes(p.color)?p.color:c.color})});
+      this.cars.forEach((c,i)=>{const p=s.cars?.[i];if(c.boat?sea(p)&&Number.isFinite(p.h):valid(p,1.4))Object.assign(c,{x:p.x,z:p.z,h:p.h,lightsOff:p.lightsOff===true,color:carColors.includes(p.color)?p.color:c.color})});
       for(const p of Array.isArray(s.cars)?s.cars.slice(this.cars.length):[]){
         if(!p?.acquired)continue;
         if(p.heli&&Number.isFinite(p.alt)&&Number.isFinite(p.h)&&p.x>=-130&&p.x<=420&&p.z>=-216&&p.z<=148){this.cars.push({...car(this.cars.length,p.x,p.z,p.h,'#455668'),acquired:true,heli:true,alt:clamp(p.alt,0,75)});continue}
         if(p.policeBoat&&sea(p)&&Number.isFinite(p.h)){this.cars.push({...car(this.cars.length,p.x,p.z,p.h,'#374f72'),acquired:true,policeBoat:true,boat:true,fromHarbor:!!p.fromHarbor});continue}
         if(!valid(p,.35))continue;
-        this.cars.push({...car(this.cars.length,p.x,p.z,p.h,carColors.includes(p.color)||p.color==='#455668'?p.color:carColors[0],clamp(p.style|0,0,2)),acquired:true,bike:!!p.bike,cruiser:!!p.cruiser})
+        this.cars.push({...car(this.cars.length,p.x,p.z,p.h,carColors.includes(p.color)||p.color==='#455668'?p.color:carColors[0],clamp(p.style|0,0,2)),acquired:true,bike:!!p.bike,cruiser:!!p.cruiser,lightsOff:p.lightsOff===true})
       }
       if((this.cars[s.player?.car]?.heli||valid(s.player,.4)||(this.cars[s.player?.car]?.boat&&sea(s.player)))&&(s.player.car===null||this.cars[s.player.car])){const p=s.player;Object.assign(this.player,{x:p.x,z:p.z,h:p.h,car:p.car});if(this.vehicle)Object.assign(this.player,{x:this.vehicle.x,z:this.vehicle.z,h:this.vehicle.h})}
       for(const c of this.traffic)if(this.cars.some(v=>v.acquired&&dist(v,c)<5))this.redeployTraffic(c);
