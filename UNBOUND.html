@@ -34,6 +34,8 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
 #speedBox strong{font:300 clamp(48px,6.6vw,88px)/.92 "Segoe UI",sans-serif;letter-spacing:-.075em;font-variant-numeric:tabular-nums}
 #speedBox{border-bottom:1px solid #fff6;padding-bottom:6px}
 
+
+#touchLights[aria-pressed="true"]{color:#ffdf9a;border-color:#ffdf9a}
 </style></head>
 <body><canvas id="world" aria-label="3D UNBOUND game world"></canvas><div id="shade"></div>
 <svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs><symbol id="sun" viewBox="0 0 60 42"><path d="M6 23a24 24 0 0 1 48 0Z M5 26h50v3H5z M9 32h42v3H9z M16 38h28v2H16z" fill="currentColor"/></symbol></defs></svg>
@@ -43,7 +45,7 @@ h1.unbound{font:italic 900 clamp(45px,8.4vw,136px)/.95 Bahnschrift,Arial,sans-se
 <div id="mapDock"><button id="miniButton" data-cmd="map" aria-label="Open city map"><canvas id="mini" width="244" height="166"></canvas><span>M</span></button><div id="roadName">OCEAN DRIVE</div></div>
 <div id="speedBox"><strong id="speed">000</strong><div><small id="unit">KM/H</small><span id="gear">P</span></div></div>
 <div id="context"></div><div id="notification" role="status"></div><div class="shortcut"><span><kbd>M</kbd> Map</span><span><kbd>J</kbd> Jobs</span><span><kbd>H</kbd> Controls</span></div></section>
-<div id="touch" class="playing"><div id="stick" aria-label="Movement joystick"><i></i></div><div class="touchActions"><button data-cmd="car">Board</button><button data-cmd="act">Use</button><button data-hold="brake">Sprint</button><button class="altKey" data-hold="rise">Climb</button><button class="altKey" data-hold="descend">Lower</button></div></div>
+<div id="touch" class="playing"><div id="stick" aria-label="Movement joystick"><i></i></div><div class="touchActions"><button data-cmd="car">Board</button><button data-cmd="act">Use</button><button id="touchLights" data-cmd="lights" aria-pressed="true" hidden>Lights</button><button data-hold="brake">Sprint</button><button class="altKey" data-hold="rise">Climb</button><button class="altKey" data-hold="descend">Lower</button></div></div>
 <div id="veil" hidden><section id="panel" role="dialog" aria-modal="true" aria-labelledby="panelTitle" tabindex="-1"><div class="panelhead"><div><div class="eyebrow" id="panelTag"></div><h2 id="panelTitle"></h2></div><button id="closePanel" aria-label="Close panel">×</button></div><div id="panelBody"></div></section></div>
 <section id="arrest" hidden role="dialog" aria-label="Arrested"><div><h2>BUSTED</h2><p id="arrestInfo"></p><button class="major" id="release">Return to the street</button></div></section><div id="error" role="alert" hidden></div>
 <script>const PC = (() => {
@@ -800,7 +802,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     const light=!intro&&game.room?1:night(game.clock);function scene(u){gl.uniform3fv(u.rightV,right);gl.uniform3fv(u.upV,up);gl.uniform3fv(u.forwardV,forward);gl.uniform2f(u.lens,lens*aspect,lens);gl.uniform1f(u.light,light);gl.uniform1f(u.tm,game.time%1000)}
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.disable(gl.DEPTH_TEST);gl.useProgram(sky);scene(su);gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);gl.enableVertexAttribArray(su.a);gl.vertexAttribPointer(su.a,2,gl.FLOAT,false,0,0);gl.drawArrays(gl.TRIANGLES,0,3);gl.disableVertexAttribArray(su.a);
     gl.useProgram(mesh);gl.enable(gl.DEPTH_TEST);scene(mu);
-    const emitters=[...game.traffic,...game.cars,...game.patrols].filter(c=>!c.boat&&!c.heli)
+    const emitters=[...game.traffic,...game.cars].filter(c=>!c.boat&&!c.heli)
       .sort((a,b)=>PC.dist(a,p)-PC.dist(b,p)).slice(0,4);
     const roadCars=[],lamps=[];
     for(let i=0;i<4;i++){const c=emitters[i];roadCars.push(c?.x??3000,c?.z??3000,Math.sin(c?.h||0),-Math.cos(c?.h||0));lamps.push(c&&!c.lightsOff&&(c===v||c.a||c.cruiser)?1:0)}
@@ -1042,6 +1044,7 @@ if(typeof module!=='undefined'&&module.exports)module.exports=PC;
     else if(!v){const film=PC.film.some((f,i)=>!game.found.includes(i)&&PC.dist(p,f)<3.5),npc=game.nearestPed();prompt=film?'<kbd>'+use+'</kbd> Collect film roll':npc?'<kbd>'+use+'</kbd> Talk to '+npc.name:game.nearestCar()?'<kbd>'+entry+'</kbd> '+(game.nearestCar().a?'Take NPC '+(game.nearestCar().bike?'motorcycle':'car'):'Board vehicle'):''}
     const board=document.querySelector('#touch [data-cmd=car]'),brake=document.querySelector('#touch [data-hold=brake]');
     board.textContent=v?'Exit':'Board';if(v?.boat&&!v.policeBoat&&game.nearbyPatrolBoat())board.textContent='Take boat';
+    const lights=$('touchLights');lights.hidden=!v||v.boat||v.heli;lights.setAttribute('aria-pressed',String(!!v&&!v.lightsOff));
     brake.textContent=v?'Brake':'Sprint';brake.hidden=!!v?.heli;
     document.body.classList.toggle('flying',!!v?.heli);
     if(v?.heli){$('gear').textContent=Math.round(v.alt)+' m';prompt=matchMedia('(any-pointer:coarse)').matches?(v.alt>.05?'Lower to land':'Hold Climb to take off'):v.alt>.05?'Space · Climb &nbsp; C · Descend':'Space · Take off &nbsp; F · Exit'}

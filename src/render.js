@@ -307,7 +307,7 @@ function createRenderer(canvas){
     const light=!intro&&game.room?1:night(game.clock);function scene(u){gl.uniform3fv(u.rightV,right);gl.uniform3fv(u.upV,up);gl.uniform3fv(u.forwardV,forward);gl.uniform2f(u.lens,lens*aspect,lens);gl.uniform1f(u.light,light);gl.uniform1f(u.tm,game.time%1000)}
     gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.disable(gl.DEPTH_TEST);gl.useProgram(sky);scene(su);gl.bindBuffer(gl.ARRAY_BUFFER,quadBuf);gl.enableVertexAttribArray(su.a);gl.vertexAttribPointer(su.a,2,gl.FLOAT,false,0,0);gl.drawArrays(gl.TRIANGLES,0,3);gl.disableVertexAttribArray(su.a);
     gl.useProgram(mesh);gl.enable(gl.DEPTH_TEST);scene(mu);
-    const emitters=[...game.traffic,...game.cars,...game.patrols].filter(c=>!c.boat&&!c.heli)
+    const emitters=[...game.traffic,...game.cars].filter(c=>!c.boat&&!c.heli)
       .sort((a,b)=>PC.dist(a,p)-PC.dist(b,p)).slice(0,4);
     const roadCars=[],lamps=[];
     for(let i=0;i<4;i++){const c=emitters[i];roadCars.push(c?.x??3000,c?.z??3000,Math.sin(c?.h||0),-Math.cos(c?.h||0));lamps.push(c&&!c.lightsOff&&(c===v||c.a||c.cruiser)?1:0)}

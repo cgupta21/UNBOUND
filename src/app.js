@@ -217,6 +217,7 @@
     else if(!v){const film=PC.film.some((f,i)=>!game.found.includes(i)&&PC.dist(p,f)<3.5),npc=game.nearestPed();prompt=film?'<kbd>'+use+'</kbd> Collect film roll':npc?'<kbd>'+use+'</kbd> Talk to '+npc.name:game.nearestCar()?'<kbd>'+entry+'</kbd> '+(game.nearestCar().a?'Take NPC '+(game.nearestCar().bike?'motorcycle':'car'):'Board vehicle'):''}
     const board=document.querySelector('#touch [data-cmd=car]'),brake=document.querySelector('#touch [data-hold=brake]');
     board.textContent=v?'Exit':'Board';if(v?.boat&&!v.policeBoat&&game.nearbyPatrolBoat())board.textContent='Take boat';
+    const lights=$('touchLights');lights.hidden=!v||v.boat||v.heli;lights.setAttribute('aria-pressed',String(!!v&&!v.lightsOff));
     brake.textContent=v?'Brake':'Sprint';brake.hidden=!!v?.heli;
     document.body.classList.toggle('flying',!!v?.heli);
     if(v?.heli){$('gear').textContent=Math.round(v.alt)+' m';prompt=matchMedia('(any-pointer:coarse)').matches?(v.alt>.05?'Lower to land':'Hold Climb to take off'):v.alt>.05?'Space · Climb &nbsp; C · Descend':'Space · Take off &nbsp; F · Exit'}

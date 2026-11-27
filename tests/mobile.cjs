@@ -44,6 +44,11 @@ async function main(){
         await p.addInitScript(s=>localStorage.setItem('unbound-save-1',s),seed);await p.reload();await p.locator('#begin').tap();
       }
       await board.tap();await p.evaluate(()=>step(.2));
+      const lights=p.locator('#touchLights');
+      if(scenario==='car'||scenario==='bike'){
+        await lights.tap();assert.equal(await lights.getAttribute('aria-pressed'),'false');
+        await lights.tap();assert.equal(await lights.getAttribute('aria-pressed'),'true');
+      }else assert.ok(await lights.isHidden());
       const boarded=await state();assert.notEqual(boarded.player.car,null,scenario);
       await hold(scenario==='heli'?['[data-hold=rise]','#stick']:['#stick'],1);
       const moving=await state();assert.ok(Math.hypot(moving.player.x-boarded.player.x,moving.player.z-boarded.player.z)>.1,scenario);
